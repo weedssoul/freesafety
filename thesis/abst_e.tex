@@ -1,0 +1,54 @@
+\begin{eabstract}
+
+  Programming in the C language requires manual memory management using
+  \verb|malloc| and \verb|free|.  Such memory management style is prone
+  to bugs such as memory leak and an access to deallocated memory cells.
+
+  Suenaga and Kobayashi proposed a type system for statically verifying
+  memory-deallocation safety.  In this type system, a \emph {fractional
+  ownership}, auxiliary information that expresses the capability and
+  the obligation on a pointer, is assigned to each pointer type.  They
+  proved that a well-typed program does not cause bugs related to memory
+  deallocation.  They also proposed a type inference algorithm that
+  automatically infers a type of each variable and each function and
+  implemented a verifier based on the algorithm.  The type inference
+  algorithm generates constraints that the ownerships should satisfy and
+  checks the satisfiability of the constraints.
+
+  However, their type system is designed only for a subset of the C
+  language; it does not handle some statements such as control
+  statements. Although their verifier supports the control statements,
+  they support these statements in such a way that is not strictly based
+  on the formally defined type inference algorithm.
+
+  %Therefore, their verifier for C programs is not strictly based on the
+  %formally defined type inference algorithm.
+
+  %Their verifier can handle all statements of the C language.  However,
+  %their type system is designed only for a subset of the C language
+  %; it does not handle some statements of the C language such as control
+  %statements. Therefore, their verifier for C programs is not strictly
+  %based on the formally defined type inference algorithm.
+
+
+  Our aim is to extend their framework so that it deals with the C
+  language in a more dependable way.  Concretely, we extend (1) their
+  language with the control statements and (2) the type system to handle
+  these statements. We implement a verifier based on the extended type
+  system.  Our implementation supports the control statements, data
+  structures such as singly linked lists, and definitions of mutually
+  recursive functions.
+
+  In order to make the implementation more useful, we incorporate a
+  \emph{type-error slicer} to our verifier.  If a program is not
+  well-typed, the verifier displays the line numbers of the commands in
+  the program that are involved in the type error. This feature is
+  useful for finding the cause of the type error.
+
+  We conducted preliminary experiments with the implementation.  We
+  confirmed that our implementation correctly detects memory leak of
+  programs that include the control statements, that manipulate
+  recursive data structures, and that include mutually recursive
+  functions.
+
+\end{eabstract}

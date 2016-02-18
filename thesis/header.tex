@@ -1,0 +1,74 @@
+\usepackage{amsmath, amssymb}
+\usepackage{float}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{array}
+\usepackage{ascmac}
+\usepackage[marginpar]{todo}
+\usepackage{url}
+\usepackage{cite}
+\usepackage{fancybox}
+\usepackage{bcprules}
+\usepackage{proof}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage{newtxtext}
+%\usepackage{newtxmath}
+%\usepackage{mathptmx}
+
+%For listings
+\lstset{
+language={C},%
+basicstyle=\ttfamily,%
+commentstyle=\textit,%
+classoffset=1,%
+keywordstyle=\bfseries,%
+frame=single,%
+showstringspaces=false,%
+numbers=left,
+firstnumber=1,
+stepnumber=1,
+numberstyle=\footnotesize,%
+captionpos=b,%
+}%
+
+\renewcommand{\lstlistingname}{Program}
+
+
+\usepackage{theorem}
+
+% For theorem
+\theoremstyle{break}
+\theorembodyfont{\normalfont}
+\newtheorem{definition}{定義}
+\newtheorem{theorem}{定理}
+\newtheorem{example}{例}
+\newtheorem{conjecture}{Conjecture}
+
+% For algorithmic
+% New definitions
+\algnewcommand\algorithmicswitch{\textbf{switch}}
+\algnewcommand\algorithmiccase{\textbf{case}:}
+\algnewcommand\algorithmicdefault{\textbf{default}}
+\algnewcommand\algorithmicassert{\texttt{assert}}
+\algnewcommand\Assert[1]{\State \algorithmicassert(#1)}%
+% New "environments"
+\algdef{SE}[SWITCH]{Switch}{EndSwitch}[1]{\algorithmicswitch\ #1\ \algorithmicdo}{\algorithmicend\ \algorithmicswitch}%
+\algdef{SE}[CASE]{Case}{EndCase}[1]{\algorithmiccase\ #1}{\algorithmicend\ \algorithmiccase}%
+\algdef{SE}[DEFAULT]{Default}{EndDefault}[1]{\algorithmicdefault\ #1}{\algorithmicend\ \algorithmicdefault}%
+\algtext*{EndSwitch}%
+\algtext*{EndCase}%
+\algtext*{EndDefault}%
+% Renew definitions
+\algrenewcommand\algorithmicfunction{\textbf{function}}
+\algdef{SE}[FUNCTION]{Function}{EndFunction}[2]{\algorithmicfunction\ #1\ (#2)}{\algorithmicend\ \algorithmicfunction}%
+
+%today
+\newcounter{heisei}
+\setcounter{heisei}{\number\year}
+\addtocounter{heisei}{-1988}
+\newcommand{\jtoday}{平成\theheisei 年\number\month 月\number\day 日}
+
+%todo
+\usepackage{xcolor}
+\newcommand\mytodo[1]{\textcolor{red}{TODO:#1}}

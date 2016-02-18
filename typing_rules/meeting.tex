@@ -1,0 +1,95 @@
+\documentclass[a4j,proof]{jarticle}
+\usepackage[dvipdfmx]{graphicx,color}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{amsthm}
+\usepackage{url}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{bcprules}
+\usepackage{proof}
+\usepackage{subfigure}
+
+\title{ミーティング記録}
+\author{大元 武}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{研究内容}
+C言語を対象とした、メモリリークに関するエラーを検出するための検証器の実装。
+OCamlで書かれたC言語のコンパイラCompCertに昨日を追加していく形で実装している。
+
+\section{9/11 進捗状況}
+型推論(typing.ml)の部分を実装中。
+具体的には、構造体を扱えるように、add\_type(型同士の所有権の足し算)、
+eq\_type(型同士の所有権のequality)に Tcomp\_ptr や Tstruct に関するパターンを
+追加した。
+また、型同士の足し算を表す型Tplus, 型同士が等しいということを表す制約式の型Teqを追加した。
+
+\subsection{add\_type}
+構造体に関する以下のパターンを追加
+\begin{itemize}
+  \item Tcomp\_ptr, Tcomp\_ptr $\rightarrow$ Tplus
+  \item Tcomp\_ptr, Tplus $\rightarrow$ Tplus
+  \item Tplus, Tplus $\rightarrow$ Tplus
+  \item Tcomp\_ptr, t $\rightarrow$ Tcomp\_ptrを一回展開後、再度add\_type
+\end{itemize}
+
+\subsection{eq\_type}
+構造体に関する以下のパターンを追加
+\begin{itemize}
+  \item Tcomp\_ptr, Tcomp\_ptr $\rightarrow$ TEq (制約式)
+  \item Tcomp\_ptr, t $\rightarrow$ Tcomp\_ptrを一回展開後、再度eq\_type
+\end{itemize}
+Tplus,Tplus と Tpointer, Tcomp\_ptrのパターンも後々必要？
+
+\subsection{次回 9/15(火) までにやっておきたいこと}
+Tcomp\_ptrを一回展開する関数 expand\_comp\_ptr を実装する。
+また、展開したcomp\_ptrと展開後の型を保存しておくためのハッシュテーブルを実装する。
+これは、一回展開されたcomp\_ptrはそれ以降も同じ型に展開されるようにするためである。
+
+\section{9/15 ミーティング}
+TpointerとTcomp\_ptrのadd\_typeで落ちていたので、それに対処する。
+Tcomp\_ptrを展開した際に、structをそのまま返すのではなく、Tpointer(t, o, a)として返すようにする。また、struct内の所有権とTcomp\_ptrのintをfreshなものに置き換える。
+また、Tcomp\_ptrから所有権を削除していたが、必要になりそうなので元に戻す。
+
+\subsection{次回までにやっておきたいこと}
+\begin{itemize}
+  \item Tcomp\_ptrに所有権を追加する。
+  \item expand\_comp\_ptr内で、structの所有権とcomp\_ptrのintをfreshなものにする。
+\end{itemize}
+
+\section{9/18 ミーティング}
+Tcomp\_ptrにfreshなintを割り当てる。
+freshな所有権を割り当てる時と同じように、一つ関数を作り、Tcomp\_ptrを作るときは
+その関数を必ず呼び出すようにする。
+
+\subsection{次回までにやっておきたいこと}
+\begin{itemize}
+  \item expand\_comp\_ptr内で、structの所有権とcomp\_ptrのintをfreshなものにする。
+  \item make\_comp\_ptr (freshなintを割り当てる) を作る
+\end{itemize}
+
+\section{10/6 ミーティング}
+構造体に関する制約式の解消の前準備として、
+必要な情報を表示させるようにprinterを改良する。
+
+\subsection{次回までにやっておきたいこと}
+\begin{itemize}
+  \item print\_ctypesでTplusの中身を表示するようにする。
+  \item print\_constrでTeqの中身を表示するようにする。
+  \item comp\_ptrをexpandした結果を保存しているHashtblの中身を表示するようにする。
+  \item comp\_ptrにfreshなintを振れてない部分があるので直す。
+\end{itemize}
+
+\section{10/16 ミーティング}
+今は、rename\_type (OVarの付け替え) の中でcomp\_ptrのintの付け替えも行っていたが、
+comp\_ptrのintの付け替えの部分を切り出して他の関数として新しく定義する。
+
+\subsection{次回までにやっておきたいこと}
+\begin{itemize}
+  \item comp\_ptrのintの付け替えを新しい関数として定義する.
+\end{itemize}
+\end{document}

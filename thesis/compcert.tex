@@ -1,0 +1,52 @@
+\subsection{CompCert}
+CompCert \cite {DBLP:journals/cacm/Leroy09}は，Leroyらによって実装された
+C言語のコンパイラである．CompCertの最大の特徴は，コンパイラの正しさを数学
+的に証明をしている，という点である．コンパイラは，コンパイル時に多くの変
+換を行う．しかし，それらの変換が正しく行われているかどうかは，テストによっ
+てのみ保証されている．テストによる保証には限界があるため，Leroyらは，言語
+に意味論を与え，変換を行った際，変換後の言語が変換前の言語の意味を正確に
+保存しているというという性質を，証明支援系Coq
+\cite{DBLP:series/txtcs/BertotC04} を用いて証明した．また，Coqには
+ExtractionというCoqで書かれたコードを他の言語に変換する機能がある．この機
+能により，証明された変換をそのままプログラムにすることができる．CompCert
+は，このExtractionによって変換されたOCamlのコードが大部分を占めている．
+\label{compcert}
+
+\subsection{Clight}
+Clight \cite {DBLP:journals/jar/BlazyL09} は，CompCert内で使われている中
+間言語で，C言語のサブセットである．Clightは，ポインタや配列や構造体などの
+データ構造，$\texttt{if}$や$\texttt{switch}$などの分岐，$\texttt{while}$
+や$\texttt{for}$などの再帰，$\texttt{break}$や$\texttt{continue}$などの構
+文，再帰関数や関数ポインタなどの関数に関する機能など，C言語の機能をほぼ全
+てサポートしているが，以下の機能は排除されている．
+
+\begin{itemize}
+  \item $\texttt{long\ long}$ や $\texttt{long\ double}$ などの拡張された数字
+  \item 可変長引数の関数
+  \item 式内で副作用を起こす演算子
+  \item ブロック内での変数宣言
+  \item unstructured switch
+\end{itemize}
+
+式内で副作用を起こす演算子とは，インクリメント文などのことである．インクリ
+メントは，$x = x + 1$のように文で表現される．また，C言語では，
+$\texttt{if}$や$\texttt{while}$などのブロックの中でも変数を宣言できるが，
+Clightでは，変数は大域変数か関数のローカル変数だけである．
+
+\texttt{switch}文は，変数の値に応じて処理を分岐させる構文である．
+\begin{verbatim}
+    switch (x) {
+      case 1: s1;
+      case 2: s2;
+      case 3: s3;
+      default: s0;
+    }
+\end{verbatim}
+一般の\texttt{switch}文は$x$の値に応じて1つだけcase文が実行される．
+しかし，C言語の場合，s1，s2，s3に\texttt{break}を書かないと，それ以降全ての
+case文を実行する．例えば$x$の値が$2$だったとすると，case 2と case 3が実行される．
+このような\texttt{switch}のことを，unstructured switch と呼ぶ．
+Clightでは，このunstructured switch は扱えず，全てのcase文に\texttt{break}が
+挿入されているものとみなされる．
+
+\label{clight}

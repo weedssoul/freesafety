@@ -1,0 +1,126 @@
+\begin{thebibliography}{10}
+
+\bibitem{DBLP:books/ph/KernighanR78}
+Kernighan, B.~W. and Ritchie, D.: {\em The {C} Programming Language\/},
+  Prentice-Hall (1978).
+
+\bibitem{DBLP:conf/aplas/SuenagaK09}
+Suenaga, K. and Kobayashi, N.: Fractional Ownerships for Safe Memory
+  Deallocation, {\em Programming Languages and Systems, 7th Asian Symposium,
+  {APLAS} 2009, Seoul, Korea, December 14-16, 2009. Proceedings\/} (Hu,
+  Z.(ed.)), Lecture Notes in Computer Science, Vol.~5904, Springer, pp.\
+  128--143 (2009).
+
+\bibitem{DBLP:journals/jar/BlazyL09}
+Blazy, S. and Leroy, X.: Mechanized Semantics for the Clight Subset of the {C}
+  Language, {\em J. Autom. Reasoning\/},  Vol.~43, No.~3, pp.\ 263--288 (2009).
+
+\bibitem{DBLP:journals/cacm/Leroy09}
+Leroy, X.: Formal verification of a realistic compiler, {\em Commun. {ACM}\/},
+  Vol.~52, No.~7, pp.\ 107--115 (2009).
+
+\bibitem{DBLP:series/txtcs/BertotC04}
+Bertot, Y. and Cast{\'{e}}ran, P.: {\em Interactive Theorem Proving and Program
+  Development - Coq'Art: The Calculus of Inductive Constructions\/}, Texts in
+  Theoretical Computer Science. An {EATCS} Series, Springer (2004).
+
+\bibitem{DBLP:conf/tacas/MouraB08}
+de Moura, L.~M. and Bj{\o}rner, N.: {Z3:} An Efficient {SMT} Solver, {\em Tools
+  and Algorithms for the Construction and Analysis of Systems, 14th
+  International Conference, {TACAS} 2008, Held as Part of the Joint European
+  Conferences on Theory and Practice of Software, {ETAPS} 2008, Budapest,
+  Hungary, March 29-April 6, 2008. Proceedings\/} (Ramakrishnan, C.~R. and
+  Rehof, J.(eds.)), Lecture Notes in Computer Science, Vol.~4963, Springer,
+  pp.\ 337--340 (2008).
+
+\bibitem{DBLP:conf/itp/KrebbersLW14}
+Krebbers, R., Leroy, X. and Wiedijk, F.: Formal {C} Semantics: CompCert and the
+  {C} Standard, {\em Interactive Theorem Proving - 5th International
+  Conference, {ITP} 2014, Held as Part of the Vienna Summer of Logic, {VSL}
+  2014, Vienna, Austria, July 14-17, 2014. Proceedings\/} (Klein, G. and
+  Gamboa, R.(eds.)), Lecture Notes in Computer Science, Vol.~8558, Springer,
+  pp.\ 543--548 (2014).
+
+\bibitem{DBLP:conf/popl/StewartBCA15}
+Stewart, G., Beringer, L., Cuellar, S. and Appel, A.~W.: Compositional
+  CompCert, {\em Proceedings of the 42nd Annual {ACM} {SIGPLAN-SIGACT}
+  Symposium on Principles of Programming Languages, {POPL} 2015, Mumbai, India,
+  January 15-17, 2015\/} (Rajamani, S.~K. and Walker, D.(eds.)), {ACM}, pp.\
+  275--287 (2015).
+
+\bibitem{DBLP:conf/fmcad/McMillan11}
+McMillan, K.~L.: Interpolants from {Z3} proofs, {\em International Conference
+  on Formal Methods in Computer-Aided Design, {FMCAD} '11, Austin, TX, USA,
+  October 30 - November 02, 2011\/} (Bjesse, P. and Slobodov{\'{a}}, A.(eds.)),
+  {FMCAD} Inc., pp.\ 19--27 (2011).
+
+\bibitem{DBLP:conf/esop/HaackW03}
+Haack, C. and Wells, J.~B.: Type Error Slicing in Implicitly Typed Higher-Order
+  Languages, {\em Programming Languages and Systems, 12th European Symposium on
+  Programming, {ESOP} 2003, Held as Part of the Joint European Conferences on
+  Theory and Practice of Software, {ETAPS} 2003, Warsaw, Poland, April 7-11,
+  2003, Proceedings\/} (Degano, P.(ed.)), Lecture Notes in Computer Science,
+  Vol.~2618, Springer, pp.\ 284--301 (2003).
+
+\bibitem{DBLP:conf/dsl/DineshT97}
+Dinesh, T.~B. and Tip, F.: A Slicing-Based Approach for Locating Type Errors,
+  {\em Proceedings of the Conference on Domain-Specific Languages, DSL'97,
+  Santa Barbara, California, USA, October 15-17, 1997\/} (Ramming, C.(ed.)),
+  {USENIX} (1997).
+
+\bibitem{DBLP:conf/pepm/BoustaniH09}
+Boustani, N.~E. and Hage, J.: Improving type error messages for generic java,
+  {\em Proceedings of the 2009 {ACM} {SIGPLAN} Symposium on Partial Evaluation
+  and Semantics-based Program Manipulation, {PEPM} 2009, Savannah, GA, USA,
+  January 19-20, 2009\/} (Puebla, G. and Vidal, G.(eds.)), {ACM}, pp.\ 131--140
+  (2009).
+
+\bibitem{飯村枝里2007}
+飯村枝里, 小林直樹, 末永幸平:
+  型に基づくレース解析とその結果表示のためのスライシング,
+  プログラミングおよびプログラミング言語ワークショップ (2007).
+
+\bibitem{飯村枝里2008}
+飯村枝里, 小林直樹, 末永幸平: 型エラースライシングによるデッドロックの原因特定,
+  情報処理学会論文誌プログラミング (PRO),  Vol.~1, No.~2, pp.\ 71--84 (2008).
+
+\bibitem{DBLP:conf/sigsoft/XieA05}
+Xie, Y. and Aiken, A.: Context- and path-sensitive memory leak detection,  {\em
+  {ACM} {SIGSOFT} International Symposium on Foundations of Software
+  Engineering\/}, pp.\ 115--125 (2005).
+
+\bibitem{DBLP:conf/pldi/CheremPR07}
+Cherem, S., Princehouse, L. and Rugina, R.: Practical memory leak detection
+  using guarded value-flow analysis,  {\em {ACM} {SIGPLAN}\/}, pp.\ 480--491
+  (2007).
+
+\bibitem{DBLP:conf/lics/Reynolds02}
+Reynolds, J.~C.: Separation Logic: {A} Logic for Shared Mutable Data
+  Structures,  {\em 17th {IEEE} Symposium on Logic in Computer Science {(LICS}
+  2002), 22-25 July 2002, Copenhagen, Denmark, Proceedings\/}, {IEEE} Computer
+  Society, pp.\ 55--74 (2002).
+
+\bibitem{DBLP:conf/cav/BerdineCCDOWY07}
+Berdine, J., Calcagno, C., Cook, B., Distefano, D., O'Hearn, P.~W., Wies, T.
+  and Yang, H.: Shape Analysis for Composite Data Structures, {\em Computer
+  Aided Verification, 19th International Conference, {CAV} 2007, Berlin,
+  Germany, July 3-7, 2007, Proceedings\/} (Damm, W. and Hermanns, H.(eds.)),
+  Lecture Notes in Computer Science, Vol.~4590, Springer, pp.\ 178--192 (2007).
+
+\bibitem{DBLP:conf/tacas/DistefanoOY06}
+Distefano, D., O'Hearn, P.~W. and Yang, H.: A Local Shape Analysis Based on
+  Separation Logic, {\em Tools and Algorithms for the Construction and Analysis
+  of Systems, 12th International Conference, {TACAS} 2006 Held as Part of the
+  Joint European Conferences on Theory and Practice of Software, {ETAPS} 2006,
+  Vienna, Austria, March 25 - April 2, 2006, Proceedings\/} (Hermanns, H. and
+  Palsberg, J.(eds.)), Lecture Notes in Computer Science, Vol.~3920, Springer,
+  pp.\ 287--302 (2006).
+
+\bibitem{DBLP:conf/pldi/GuoVA07}
+Guo, B., Vachharajani, N. and August, D.~I.: Shape analysis with inductive
+  recursion synthesis, {\em Proceedings of the {ACM} {SIGPLAN} 2007 Conference
+  on Programming Language Design and Implementation, San Diego, California,
+  USA, June 10-13, 2007\/} (Ferrante, J. and McKinley, K.~S.(eds.)), {ACM},
+  pp.\ 256--265 (2007).
+
+\end{thebibliography}

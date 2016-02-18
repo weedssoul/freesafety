@@ -1,0 +1,123 @@
+\subsection{制約式変換}
+この節では，前節で生成した制約式をSMTソルバに解ける形に変換する手法につい
+て述べる．制約式\texttt{Empty}と\texttt{Teq}はそのままではSMTソルバは解く
+ことができないため，不等式の形まで変換する必要がある．制約式の変換は，
+前処理と実際に変換する段階にわけられる．
+
+再帰のある構造体に関する制約式は前節で述べたように，ポインタ型と同様に再
+帰的に展開して生成するという方法で生成すると，無限に展開されてしまう．そ
+のため，どこかで展開をとめる必要がある．先行研究では，テンプレート型
+$(\mu\alpha.\ \texttt{ref}_{f1})\ \texttt{ref}_{f0}$を使用して，展開回数
+を制限していた．この型は，ある展開回数までは別々の所有権が割り当てられて
+いるが，それ以降は同じ所有権が割り当てられているとみなすという近似をして
+いることになる．しかし，先行研究で実装された検証器では，十分に多い回数展
+開を行って制約式を生成するだけで，それ以降は同じ所有権が割り当てられてい
+るという部分は実装していなかった．
+
+本研究では，前処理の段階でプログラム中で何回か展開した先のメモリ領域に対
+して操作を行っている場合，その回数分は展開を行う．そして，変換する段階で
+それ以降に関しては同じ所有権が割り当てられているとみなすという処理を行う．
+これにより，より理論に基づいた実装になっている．
+
+
+\subsubsection{前処理}
+前処理の段階では，制約生成の段階で既に展開されたことのある
+\texttt{comp\_ptr}を展開する．制約生成の，\texttt{add\_type}や
+\texttt{eq\_type}内で，$\texttt{comp\_ptr}(\mathit{id},\ n,\ o)$と
+$\texttt{pointer}(t,\ o)$との間の足し算や型の等しさなどを求めると，
+$\texttt{comp\_ptr}(\mathit{id},\ n,\ o)$は一回展開され，$\mathit{id}$と
+$n$の組がどの構造体に展開されるかという情報は記録される．\texttt{Empty}や
+\texttt{Teq}内の$\mathit{id}$と$n$の組が制約生成の段階で記録されているか
+どうかを調べ，記録されている場合は展開先の構造体の
+$\texttt{comp\_ptr}(\mathit{id},\ n',\ o')$を使い，書き換えるということを
+行う．この操作を$\mathit{id}$と$n'$の組に関しても再帰的に適用していくこと
+で，制約生成の段階で展開された回数分，つまりプログラム中で展開された回数
+分は，構造体を展開するというということを実現している．
+
+\begin{example}[前処理: Empty]
+  構造体の定義は例\ref{example1}と同じである．
+  制約式
+\begin{verbatim}
+    Empty(list, 1, loc);
+\end{verbatim}
+  が生成され，制約生成の段階で，
+\begin{verbatim}
+    (list, 1) -> struct(list,
+                        [(list, comp_ptr(list, 2, Ovar(2)));
+                         (list, int)])
+    (list, 2) -> struct(list
+                        [(list, comp_ptr(list, 3, Ovar(3)));
+                         (list, int)])
+\end{verbatim}
+  という情報が記録されていた場合，前処理によって制約式は
+\begin{verbatim}
+    Empty(list, 3, loc);
+    Eq(Ovar(2), Oconst(0), loc);
+    Eq(Ovar(3), Oconst(0), loc);
+\end{verbatim}
+  という制約式に書き換えられる．
+\end{example}
+
+\texttt{Teq}の場合も同様に展開を行うのだが，\texttt{Teq}の引数はリストに
+なっているため，複数の$\mathit{id}$と$n$の組が出現することがある．この場
+合は，リスト内の全ての$\mathit{id}$と$n$の組が制約生成の段階で，展開され
+ている場合のみ書き換えを行い，リスト内の要素の一部だけ記録されている場合
+は展開を行わない．
+
+
+\subsubsection{制約の不等式への変換}
+前処理の段階で，制約生成の段階で記録された$\mathit{id}$と$n$の情報を使っ
+て構造体を展開し制約式を書き換えたため，変換の段階では記録されていない
+$\mathit{id}$と$n$に関しての処理を行う．
+
+具体的には，前処理が終わった段階で記録されていない$\mathit{id}$と$n$の組
+は全て，自分自身と同じ型の構造体を参照しているとみなす．そしてその情報を
+使い，前処理と同様に制約式を書き換えていく．制約式が書き換え前と書き換え
+後とで変化しなくなった時点で，書き換えをやめる．この操作が終わると，
+\texttt{Empty}と\texttt{Teq}からは新しい制約式が生成されることはないため，
+制約式から\texttt{Empty}と\texttt{Teq}を消去してもよい．消去後の制約式に
+は，\texttt{Lt}，\texttt{Le}，\texttt{Eq}しか入っていないため，SMTソルバ
+で解ける形になっている．
+
+\begin{example}[変換: Teq]
+  構造体の定義は例\ref{example1}と同じである．
+  制約式
+\begin{verbatim}
+    Teq([(list, 1)], [(list, 2); (list, 3)])
+\end{verbatim}
+  が生成され，前処理の段階で
+\begin{verbatim}
+    (list, 1) -> struct(list,
+                        [(list, comp_ptr(list, 4, Ovar(4)));
+                         (list, int)])
+\end{verbatim}
+  という情報が記録されてい場合，\verb|(list, 2)|と\verb|(list, 3)|に関し
+  て情報が記録されていないため，前処理の段階ではこの制約式の書き換えは行
+  われない．変換の段階では，まず\verb|(list, 2)|と\verb|(list, 3)|に関し
+  て自分自身を参照しているという情報を追加する．
+\begin{verbatim}
+    (list, 1) -> struct(list,
+                        [(list, comp_ptr(list, 4, Ovar(4)));
+                         (list, int)])
+    (list, 2) -> struct(list,
+                        [(list, comp_ptr(list, 2, Ovar(5)));
+                         (list, int)])
+    (list, 3) -> struct(list,
+                        [(list, comp_ptr(list, 3, Ovar(6)));
+                         (list, int)])
+    (list, 4) -> struct(list,
+                        [(list, comp_ptr(list, 4, Ovar(4)));
+                         (list, int)])
+\end{verbatim}
+  この情報を使い制約式を書き換えると
+\begin{verbatim}
+    Teq([(list, 4)], [(list, 2); (list, 3)]);
+    Eq(Ovar(4), Oplus(Ovar(5), Ovar(6)));
+\end{verbatim}
+  になる．そして，\texttt{Teq}からはもう新しい制約式は生成されないため
+  \texttt{Teq}は消去され，
+\begin{verbatim}
+    Eq(Ovar(4), Oplus(Ovar(5), Ovar(6)));
+\end{verbatim}
+  だけになる．
+\end{example}

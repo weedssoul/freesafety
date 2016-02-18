@@ -1,0 +1,207 @@
+
+struct dl_node {
+  struct dl_node *next;
+  struct dl_node *prev;
+};
+
+struct bt_node {
+  struct bt_node *right;
+  struct bt_node *left;
+};
+
+extern void *malloc(unsigned int size);
+extern void free(void *p);
+extern void _fst_assume_null(void *p);
+extern void _fst_assert_eq(void *p1, void *p2);
+extern void _fst_assert_sameregion(void *p1, void *p2);
+extern void _fst_assert_empty(void *p);
+extern void _fst_assert_writecap(void *p, double w);
+extern void _fst_assert_freeob(void *p, double w);
+extern int random(void);
+
+
+
+struct dl_node *delete(struct dl_node *l) {
+  struct dl_node *ret = '\0';
+
+  // a : { prev : a ref(1, 1); next : top ref(0, 0) }
+  // b : { prev : top ref(0, 0); next : b ref(1, 1) }
+  // l : { prev : a ref(1, 1); next : b (1, 1) } ref(1, 1)
+  // ret : top
+  if (random()) {
+    // a : { prev : a ref(1, 1); next : top ref(0, 0) }
+    // b : { prev : top ref(0, 0); next : b ref(1, 1) }
+    // l : { prev : a ref(1, 1); next : b (1, 1) } ref(1, 1)
+    // ret : top
+    ret = l->next;
+    // a : { prev : a ref(1, 1); next : top ref(0, 0) }
+    // b : { prev : top ref(0, 0); next : b ref(1, 1) }
+    // l : { prev : a ref(1, 1); next : top (0, 0) } ref(1, 1)
+    // ret : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+    l->next = ret->next;
+    // a : { prev : a ref(1, 1); next : top ref(0, 0) }
+    // b : { prev : top ref(0, 0); next : b ref(1, 1) }
+    // l : { prev : a ref(1, 1); next : b ref(1, 1) } ref(1, 1)
+    // ret : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+    l->next->prev = l;
+    // a : { prev : a ref(1, 1); next : top ref(0, 0) }
+    // b : { prev : top ref(0, 0); next : b ref(1, 1) }
+    // l : { prev : a ref(1, 1); next : b ref(1, 1) } ref(1, 1)
+    // ret : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+    // _fst_assert_freeob(ret, 1.0);
+    // _fst_assert_empty(ret->next);
+    // _fst_assert_empty(ret->prev);
+    return ret;
+  } else {
+    // a : { prev : a ref(1, 1); next : top ref(0, 0) }
+    // b : { prev : top ref(0, 0); next : b ref(1, 1) }
+    // l : { prev : a ref(1, 1); next : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1) } ref(1, 1)
+    // ret : top
+    // _fst_assert_eq(l->next->prev, l);
+    l->next->prev = l;
+    // a : { prev : a ref(1, 1); next : top ref(0, 0) }
+    // b : { prev : top ref(0, 0); next : b ref(1, 1) }
+    // l : { prev : a ref(1, 1); next : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1) } ref(1, 1)
+    // ret : top
+    ret = delete(l->next);
+    // a : { prev : a ref(1, 1); next : top ref(0, 0) }
+    // b : { prev : top ref(0, 0); next : b ref(1, 1) }
+    // l : { prev : a ref(1, 1); next : b (1, 1) } ref(1, 1)
+    // ret : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+    // _fst_assert_freeob(ret, 1.0);
+    // _fst_assert_empty(ret->prev);
+    // _fst_assert_empty(ret->next);
+    return ret;
+  }
+}
+
+void free_list(struct dl_node *list) {
+  struct dl_node *p = '\0';
+  struct dl_node *tmp = '\0';
+
+  // list : { prev : a ref(1, 1); next : b ref(1, 1) } ref(1, 1)
+  // p : top
+  // tmp : top
+  p = list->next;
+  // list : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+  // p : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+  // tmp : top
+  while(p != '\0') {
+    // list : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+    // p : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+    // tmp : top
+    tmp = p->next;
+    // list : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+    // p : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+    // tmp : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+    free(p);
+    // list : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+    // p : { prev : top ref(0, 0); next : top ref(0, 0) } ref(0, 0)
+    // tmp : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+    p = tmp;
+    // list : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+    // p : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+    // tmp : top
+  }
+  _fst_assert_eq(p, tmp);
+  // list : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+  // p : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+  // tmp : top
+  _fst_assume_null(p);
+  _fst_assert_eq(p, tmp);
+  // list : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+  // p : top
+  // tmp : top
+  p = list->prev;
+  // list : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+  // p : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+  // tmp : top
+  while(p != '\0') {
+    // list : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+    // p : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+    // tmp : top
+    tmp = p->prev;
+    // list : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+    // p : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+    // tmp : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+    free(p);
+    // list : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+    // p : { prev : top ref(0, 0); next : top ref(0, 0) } ref(0, 0)
+    // tmp : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+    p = tmp;
+    // list : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+    // p : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+    // tmp : top
+  }
+  _fst_assert_eq(p, tmp);
+  // list : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+  // p : { prev : a ref(1, 1); next : top ref(0, 0) } ref(1, 1)
+  // tmp : top
+  _fst_assume_null(p);
+  _fst_assert_eq(p, tmp);
+  // list : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+  // p : { prev : top ref(0, 0); next : top ref(0, 0) } ref(0, 0)
+  // tmp : top
+  free(list);
+  // list : { prev : top ref(0, 0); next : top ref(0, 0) } ref(0, 0)
+  // p : { prev : top ref(0, 0); next : top ref(0, 0) } ref(0, 0)
+  // tmp : top
+  return;
+}
+
+struct dl_node *make_list(unsigned int n) {
+  struct dl_node *ret = '\0';
+  struct dl_node *tmp = '\0';
+  // tmp : { prev : top ref(0, 0); next : top ref(0, 0) } ref(0, 0)
+  // ret : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+  while (n > 0) {
+    // tmp : { prev : top ref(0, 0); next : top ref(0, 0) } ref(0, 0)
+    // ret : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+    tmp = malloc(sizeof(struct dl_node));
+    // tmp : { prev : top ref(0, 0); next : top ref(0, 0) } ref(1, 1)
+    // ret : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+    tmp->next = ret;
+    // tmp : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+    // ret : { prev : top ref(0, 0); next : top ref(0, 0) } ref(0, 0)
+    ret->prev = tmp;
+    // tmp : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+    // ret : { prev : top ref(0, 0); next : top ref(0, 0) } ref(0, 0)
+    _fst_assert_eq(tmp->next, ret);
+    ret = tmp;
+    // tmp : { prev : top ref(0, 0); next : top ref(0, 0) } ref(0, 0)
+    // ret : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+  }
+  _fst_assert_eq(ret, tmp);
+  // tmp : { prev : top ref(0, 0); next : top ref(0, 0) } ref(0, 0)
+  // ret : { prev : top ref(0, 0); next : b ref(1, 1) } ref(1, 1)
+  ret->prev = '\0';
+  // tmp : { prev : top ref(0, 0); next : top ref(0, 0) } ref(0, 0)
+  // ret : { prev : a ref(1, 1); next : b ref(1, 1) } ref(1, 1)
+  return ret;
+}
+
+int main(int argc, char **argv)
+{
+  struct dl_node *l;
+  struct dl_node *elm;
+  l = make_list(5);
+  elm = delete(l);
+  // free(elm);
+  free_list(l);
+  // free_list(make_list(5));
+  return 0;
+}
+
+
+/*
+void insert(struct dl_node *elm, struct dl_node *l) {
+  elm->prev = l;
+  elm->next = l->next;
+  l->next = elm;
+  l->next->prev = elm;
+  _fst_assert_eq(l->next, elm);
+  _fst_assert_eq(l, elm->prev);
+}
+
+
+*/

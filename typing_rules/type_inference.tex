@@ -1,0 +1,251 @@
+\documentclass[a4j,proof]{jarticle}
+\usepackage[dvipdfmx]{graphicx,color}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{amsthm}
+\usepackage{url}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{bcprules}
+\usepackage{proof}
+\usepackage{subfigure}
+
+\begin{document}
+
+
+\section{型判断}
+\subsection{式}
+式が型付け可能か判断する型判断は、$\Gamma \vdash^{w/r} e:t$の形をしている。
+型環境$\Gamma$のもとで$e$を評価すると$e$に$t$という型がつくということを表
+している。$w/r$は、$e$に対して書き込みが行われているかどうかを区別するた
+めのラベルである。$w$の時は変数に対して書き込みが行われているという意味で
+ある。$r$の時、変数の読み込みが行われているという意味である。
+
+\subsection{文}
+型判断は
+\[
+\Theta;\ B;\ C;\ \Gamma \vdash s \Rightarrow \Gamma'
+\]
+の形で表される。\\
+$\Theta$は関数環境、Bはbreak環境、Cはcontinue環境、$\Gamma$, $\Gamma'$は型環境、sはstatementを表している。
+
+
+\section{型付け規則}
+式の型付け規則を図\ref{typing_expr}のように定義する。
+
+\begin{figure}[htbp]
+  \infrule[Evar]{
+  }
+  {
+  \Gamma,\ x:t \vdash^{w/r} x:t
+  }
+
+  \infrule[Etemp]{
+  }
+  {
+  \Gamma,\ temp:t \vdash^{w/r} \mathtt{temp}: t
+  }
+
+  \infrule[Econst]{
+  }
+  {
+  \Gamma \vdash^{w/r} \mathtt{const}:void
+  }
+
+
+  \infrule[Eunop]{
+  \Gamma \vdash^{w/r} e:t
+  }
+  {
+  \Gamma \vdash^{w/r} unop\ e:void
+  }
+
+  \infrule[Ebinop]{
+  \Gamma \vdash^{w/r} e_{1}:t \andalso
+  \Gamma \vdash^{w/r} e_{2}:t'
+  }
+  {
+  \Gamma \vdash^{w/r} e_{1}\ binop\ e_{2}:void
+  }
+
+  \infrule[Ederef\_r]{
+  0 < o
+  }
+  {
+  \Gamma,\ x:\mathtt{pointer}(t,\ o) \vdash^{r} \mathit{*x}:t
+  }
+
+  \infrule[Ederef\_w]{
+  o = 1
+  }
+  {
+  \Gamma,\ x:\mathtt{pointer}(t,\ o) \vdash^{w} \mathit{*x}:t
+  }
+
+  \infrule[Efield]{
+  fl \vdash id:t
+  }
+  {
+  \Gamma,\ x:\mathtt{struct}(id,\ fl) \vdash^{w/r} x.f:t
+  }
+  \caption{式の型付け規則}
+  \label{typing_expr}
+\end{figure}
+
+文の型付け規則を図\ref{typing_stmt}のように定義する。
+
+\begin{figure}[htbp]
+\infrule[Sskip]{
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash \mathtt{skip} \Rightarrow \Gamma'
+}
+
+%TODO: exprを使った形に書き直す
+\infrule[Sassign]{
+\Gamma\ \vdash^{w} e_{1}:t_{1} \andalso
+\Gamma\ \vdash^{r} e_{2}:t_{2} \andalso
+\Gamma'\ \vdash^{w} e_{1}:t_{1}' \andalso
+\Gamma'\ \vdash^{r} e_{2}:t_{2}' \\
+\mathtt{empty}(t_{1}) \andalso
+t_{2} = t_{1}' + t_{2}'
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash e_{1} = e_{2} \Rightarrow
+\Gamma'
+}
+
+\infrule[Scall\_set]{
+\Theta(f) = \tilde{t} \rightarrow \tilde{t}' \andalso
+\mathtt{empty}(t_{0}) \andalso
+\mathtt{return}(f) = t_{1}
+}
+{
+\Theta;\ B;\ C;\ \Gamma,\ \mathtt{temp} : t_{0},\ \tilde{x} : \tilde{\tau} \vdash
+\mathtt{temp} = f(\tilde{x}) \Rightarrow
+\Gamma,\ t : t_{1},\ \tilde{x} : \tilde{\tau}'
+}
+
+\infrule[Scall]{
+\Theta(f) = \tilde{t} \rightarrow \tilde{t}'
+}
+{
+\Theta;\ B;\ C;\ \Gamma,\ \tilde{x} : \tilde{t} \vdash f(\tilde{x}) \Rightarrow
+\Gamma,\ \tilde{x} : \tilde{t}'
+}
+
+
+\infrule[Sfree]{
+o = 1 \andalso o' = 0 \andalso \mathtt{empty}(t)
+}
+{
+\Theta;\ B;\ C;\ \Gamma,\ x:\mathtt{Tpointer}(t,\ o) \vdash \mathtt{free}(x)
+\Rightarrow \Gamma,\ x:\mathtt{Tpointer}(t,\ o')
+}
+
+\infrule[Smalloc]{
+o = 0 \andalso o' = 1 \andalso \mathtt{empty}(t)
+}
+{
+\Theta;\ B;\ C;\ \Gamma,\ \mathtt{temp} : \texttt{Tpointer}(t, o)\ \vdash
+\mathtt{temp} = \mathtt{malloc}(e) \Rightarrow
+\Gamma,\ \mathtt{temp} : \mathtt{Tpointer}(t, o')
+}
+
+%TODO: exprを使った形に書き直す
+\infrule[Sassert]{
+\Gamma\ \vdash^{r} e_{1}:t_{1} \andalso
+\Gamma\ \vdash^{r} e_{2}:t_{2} \andalso
+\Gamma'\ \vdash^{r} e_{1}:t_{1}' \andalso
+\Gamma'\ \vdash^{r} e_{2}:t_{2}' \\
+t_1 + t_2 = t_3 + t_4
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash
+\mathtt{assert}(e_{1},\ e_{2})
+\Rightarrow \Gamma'
+}
+
+%TODO: exprを使った形に書き直す
+\infrule[Snull]{
+\Gamma \vdash^{r} e:t \andalso
+\Gamma' \vdash^{r} e:t'
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash
+\mathtt{assert\_null}(e)
+\Rightarrow \Gamma'
+}
+
+
+\infrule[Sseq]{
+\Theta;\ B;\ C;\  \Gamma \vdash s_{1} \Rightarrow \Gamma'' \andalso
+\Theta;\ B;\ C;\  \Gamma'' \vdash s_{2} \Rightarrow \Gamma'
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash s_{1};\ s_{2} \Rightarrow \Gamma'
+}
+
+\infrule[Sif]{
+\Theta;\ B;\ C:\ \Gamma \vdash s_1 \Rightarrow \Gamma_1 \andalso
+\Theta;\ B;\ C;\ \Gamma \vdash s_2 \Rightarrow \Gamma_2 \andalso
+\Gamma_1 = \Gamma_2
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash \mathtt{if} (e)\ \mathtt{then}\ s_1\ \mathtt{else}\ s_2
+\Rightarrow \Gamma_2
+}
+
+\infrule[Sswitch]{
+\Theta;\ B;\ C;\ \Gamma \vdash s_1 \Rightarrow \Gamma_1 \andalso
+\Theta;\ B;\ C;\ \Gamma \vdash s_2 \Rightarrow \Gamma_2 \andalso
+\dots \andalso
+\Theta;\ C;\ \Gamma \vdash s_m \Rightarrow \Gamma_m \andalso \\
+\Gamma' = \Gamma_1 = \Gamma_2 = \dots = \Gamma_m
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash
+\mathtt{switch}(e)\ \mathtt{case\ n_{1}:}\ s_1;\ \mathtt{case\ n_{2}:}
+\ s_2;\ \dots\ \mathtt{case\ n_{m}:}\ s_m;
+\Rightarrow \Gamma'
+}
+
+\infrule[Sloop]{
+\Gamma';\ \Gamma;\ \Gamma \vdash s_1 \Rightarrow \Gamma_1 \andalso
+\Gamma';\ \Gamma;\ \Gamma_1 \vdash s_2 \Rightarrow \Gamma_2 \andalso
+\Gamma_2 = \Gamma
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash \mathtt{loop}(s_1)\ s_2
+\Rightarrow \Gamma'
+}
+
+\infrule[Sbreak]{
+}
+{
+\Theta;\ \Gamma;\ C;\ \Gamma \vdash \mathtt{break}
+\Rightarrow \Gamma'
+}
+
+\infrule[Scontinue]{
+}
+{
+\Theta;\ B;\ \Gamma;\ \Gamma \vdash \mathtt{continue}
+\Rightarrow \Gamma'
+}
+
+%TODO: exprを使った形に書き直す
+\infrule[Sreturn]{
+\Gamma \vdash e:t \andalso
+\Gamma' \vdash e:t' \andalso
+t = \mathtt{return}(f) + t'
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash \mathtt{return}\ e
+\Rightarrow \Gamma
+}
+\caption{文の型付け規則}
+\label{typing_stmt}
+\end{figure}
+
+\end{document}

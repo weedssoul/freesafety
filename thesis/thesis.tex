@@ -1,0 +1,76 @@
+\documentclass[master]{kuisthesis}
+\jtitle{分数所有権に基づくメモリ解放安全性検証器}
+\etitle{Static verifier for safe memory deallocation
+based on fractional ownership}
+\jauthor{大元 武}
+\eauthor{Takeshi OMOTO}
+\supervisor{末永 幸平}
+\date{平成28年2月8日}
+\department{通信情報システム}
+
+\input{header.tex}
+\begin{document}
+\maketitle
+\input{abst_j.tex}
+\input{abst_e.tex}
+\tableofcontents
+\section{はじめに}
+\label{section}
+\input{intro.tex}
+
+\section{言語と型システム}
+\label{section2}
+この章では，SuenagaとKobayashiが提案した型システムの説明を行う．
+\input{type_system.tex}
+
+\section{型システムの拡張}
+\label{section3}
+
+この章では，Leroyらによって実装されたC言語のコンパイラCompCert
+\cite {DBLP:journals/cacm/Leroy09}と，そのコンパイラで使われている
+中間言語 Clight \cite {DBLP:journals/jar/BlazyL09}の説明を行う．
+そして，前章の型システムを，Clightを対象としたものに拡張する．
+
+\input{compcert.tex}
+\input{extend.tex}
+
+\section{検証器の実装}
+\label{section4}この章では，\ref{section3}で定義した型システムに基いた検
+証器の実装について述べる．
+
+\input{generate.tex}
+\input{reduce.tex}
+\input{slicer.tex}
+
+\section{予備実験}
+\label{section5}
+\input{experiment.tex}
+
+\section{関連研究}
+\label{section6}
+\input{related.tex}
+
+\section{おわりに}
+\label{section7}
+\input{conclusion.tex}
+
+\acknowledgments
+
+はじめに，本研究に際し，テーマの決定から，検証器の実装，本論文の執筆に至
+るまで，日頃から多大なる御指導を賜りました末永幸平准教授に深く感謝致しま
+す．また，本研究に有益なご助言を下さいました五十嵐淳教授，馬谷誠二助教
+に御礼を申し上げます．更に，内見を引き受けてくださり，本研究にコメントを
+下さいました高瀬英希助教に感謝申し上げます．最後に，日頃の雑談に付き合っ
+てもらうだけでなく，本研究に様々な指摘まで下さった五十嵐・末永研究室の皆
+様に感謝致します．
+
+
+
+\bibliographystyle{kuisunsrt}
+\bibliography{thesis}
+
+\appendix
+\section{プログラム例}
+\input{program.tex}
+
+\end{document}

@@ -1,0 +1,177 @@
+var "__stringlit_1" readonly {int8 79,int8 75,int8 10,int8 0}
+var "__stringlit_2" readonly {int8 66,int8 117,int8 103,int8 33,int8 10,int8 0}
+
+extern "__builtin_fabs" = builtin "__builtin_fabs" : float -> float
+extern "__builtin_memcpy_aligned" = builtin "__builtin_memcpy_aligned" :
+         int -> int -> int -> int -> void
+extern "__builtin_annot" = builtin "__builtin_annot" : int -> void
+extern "__builtin_annot_intval" = builtin "__builtin_annot_intval" : int ->
+         int -> int
+extern "__builtin_membar" = builtin "__builtin_membar" : void
+extern "__builtin_va_start" = builtin "__builtin_va_start" : int -> void
+extern "__builtin_va_arg" = builtin "__builtin_va_arg" : int -> int -> void
+extern "__builtin_va_copy" = builtin "__builtin_va_copy" : int -> int -> void
+extern "__builtin_va_end" = builtin "__builtin_va_end" : int -> void
+extern "__compcert_va_int32" = extern "__compcert_va_int32" : int -> int
+extern "__compcert_va_int64" = extern "__compcert_va_int64" : int -> long
+extern "__compcert_va_float64" = extern "__compcert_va_float64" : int ->
+         float
+extern "__builtin_bswap" = builtin "__builtin_bswap" : int -> int
+extern "__builtin_bswap32" = builtin "__builtin_bswap32" : int -> int
+extern "__builtin_bswap16" = builtin "__builtin_bswap16" : int -> int
+extern "__builtin_clz" = builtin "__builtin_clz" : int -> int
+extern "__builtin_ctz" = builtin "__builtin_ctz" : int -> int
+extern "__builtin_fsqrt" = builtin "__builtin_fsqrt" : float -> float
+extern "__builtin_fmax" = builtin "__builtin_fmax" : float -> float -> float
+extern "__builtin_fmin" = builtin "__builtin_fmin" : float -> float -> float
+extern "__builtin_fmadd" = builtin "__builtin_fmadd" : float -> float ->
+         float -> float
+extern "__builtin_fmsub" = builtin "__builtin_fmsub" : float -> float ->
+         float -> float
+extern "__builtin_fnmadd" = builtin "__builtin_fnmadd" : float -> float ->
+         float -> float
+extern "__builtin_fnmsub" = builtin "__builtin_fnmsub" : float -> float ->
+         float -> float
+extern "__builtin_read16_reversed" = builtin "__builtin_read16_reversed" :
+         int -> int
+extern "__builtin_read32_reversed" = builtin "__builtin_read32_reversed" :
+         int -> int
+extern "__builtin_write16_reversed" = builtin "__builtin_write16_reversed" :
+         int -> int -> void
+extern "__builtin_write32_reversed" = builtin "__builtin_write32_reversed" :
+         int -> int -> void
+extern "atoi" = extern "atoi" : int -> int
+extern "free" = free : int -> void
+extern "malloc" = malloc : int -> int
+extern "qsort" = extern "qsort" : int -> int -> int -> int -> void
+extern "rand" = extern "rand" : int
+extern "printf" = extern "printf" : int -> int
+"quicksort"('lo', 'hi', 'base') : int -> int -> int -> void
+{
+  var 'i', 'j', 'pivot', 'temp', '$60', '$59';
+  if ('lo' < 'hi') {
+    'i' = 'lo';
+    'j' = 'hi';
+    'pivot' = int32['base' + 4 * 'hi'];
+    {{ loop {
+         {{ if ('i' < 'j') {
+              /*skip*/
+            } else {
+              exit 1;
+            }
+            {{ loop {
+                 {{ if ('i' < 'hi') {
+                      '$59' = int32['base' + 4 * 'i'] <= 'pivot';
+                      '$59' = '$59';
+                    } else {
+                      '$59' = 0;
+                    }
+                    if ('$59' != 0) {
+                      /*skip*/
+                    } else {
+                      exit 1;
+                    }
+                    'i' = 'i' + 1;
+                 }}
+               }
+            }}
+            {{ loop {
+                 {{ if ('j' > 'lo') {
+                      '$60' = int32['base' + 4 * 'j'] >= 'pivot';
+                      '$60' = '$60';
+                    } else {
+                      '$60' = 0;
+                    }
+                    if ('$60' != 0) {
+                      /*skip*/
+                    } else {
+                      exit 1;
+                    }
+                    'j' = 'j' - 1;
+                 }}
+               }
+            }}
+            if ('i' < 'j') {
+              'temp' = int32['base' + 4 * 'i'];
+              int32['base' + 4 * 'i'] = int32['base' + 4 * 'j'];
+              int32['base' + 4 * 'j'] = 'temp';
+            }
+         }}
+       }
+    }}
+    'temp' = int32['base' + 4 * 'i'];
+    int32['base' + 4 * 'i'] = int32['base' + 4 * 'hi'];
+    int32['base' + 4 * 'hi'] = 'temp';
+    "quicksort"('lo', 'i' - 1, 'base') : int -> int -> int -> void;
+    "quicksort"('i' + 1, 'hi', 'base') : int -> int -> int -> void;
+  }
+}
+"cmpint"('i', 'j') : int -> int -> int
+{
+  var 'vi', 'vj';
+  'vi' = int32['i'];
+  'vj' = int32['j'];
+  if ('vi' == 'vj') {
+    return 0;
+  }
+  if ('vi' < 'vj') {
+    return - 1;
+  }
+  return 1;
+}
+"main"('argc', 'argv') : int -> int -> int
+{
+  var 'n', 'i', 'a', 'b', 'bench', '$65', '$64', '$63', '$62', '$61';
+  'bench' = 0;
+  if ('argc' >= 2) {
+    '$61' = "atoi"(int32['argv' + 4 * 1]) : int -> int;
+    'n' = '$61';
+  } else {
+    'n' = 1000000;
+  }
+  if ('argc' >= 3) {
+    'bench' = 1;
+  }
+  '$62' = "malloc"('n' * 4) : int -> int;
+  'a' = '$62';
+  '$63' = "malloc"('n' * 4) : int -> int;
+  'b' = '$63';
+  'i' = 0;
+  {{ loop {
+       {{ if ('i' < 'n') {
+            /*skip*/
+          } else {
+            exit 1;
+          }
+          '$64' = "rand"() : int;
+          '$65' = '$64' & 65535;
+          int32['a' + 4 * 'i'] = '$65';
+          int32['b' + 4 * 'i'] = '$65';
+       }}
+       'i' = 'i' + 1;
+     }
+  }}
+  "quicksort"(0, 'n' - 1, 'a') : int -> int -> int -> void;
+  if ('bench' == 0) {
+    "qsort"('b', 'n', 4, "cmpint") : int -> int -> int -> int -> void;
+    'i' = 0;
+    {{ loop {
+         {{ if ('i' < 'n') {
+              /*skip*/
+            } else {
+              exit 1;
+            }
+            if (int32['a' + 4 * 'i'] != int32['b' + 4 * 'i']) {
+              "printf"("__stringlit_2") : int -> int;
+              return 2;
+            }
+         }}
+         'i' = 'i' + 1;
+       }
+    }}
+    "printf"("__stringlit_1") : int -> int;
+  }
+  "free"('a') : int -> void;
+  return 0;
+}
+

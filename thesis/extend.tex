@@ -1,0 +1,622 @@
+\subsection{型システムの拡張}
+\ref{section2}で説明した型システムを，Clightを対象としたものに拡張を行う．
+具体的には，Clightの型に所有権の情報を追加し，その型をもとにClightの構文
+に型付け規則を与える．
+
+まず，元のClightの型について説明をする．
+
+\begin{definition}[型]
+  型を図\ref{clight_type}のように定義する．$t\ \mathit{list}$は$t$の$0$個
+  以上の要素の並びを表す．
+\end{definition}
+\begin{figure}[htbp]
+  \centering
+  \fbox{$
+  \begin{aligned}
+    t\ (\mathit{types})\ ::=
+    \ & \texttt{int} (\mathit{intsize},\ \mathit{signedness})\ |
+    \ \texttt{float}(\mathit{floatsize})\ |
+    \ \texttt{void} \ \\
+    \ |\ &\texttt{array}(t,\ n)\ |\ \texttt{pointer}(t)\ |
+    \ \texttt{function}(t_{1}\ \mathit{list},\ t) \ \\
+    \ |\ &\texttt{struct}(\mathit{id},\ \mathit{fl})\ |
+    \ \texttt{union}(\mathit{id},\ \mathit{fl})\ \\
+    \ |\ &\texttt{comp\_ptr}(\mathit{id})\ \\
+    \mathit{intsize} ::= \ & \texttt{I8\ |\ I16\ |\ I32} \\
+    \mathit{floatsize} ::= \ & \texttt{F32\ |\ F64} \\
+    \mathit{fl}\ (\mathit{fieldlist})\ ::=
+    \ &(\mathit{id},\,t)\ \mathit{list}
+  \end{aligned}
+  $}
+  \caption{型}
+  \label{clight_type}
+\end{figure}
+
+\texttt{int}や\texttt{float}は，定数につく型で，引数としてそれぞれのサイ
+ズを表す，\textit{intsize}, \textit{floatsize}を引数としてとる．
+\ref{clight}節で説明したように，64bitの整数など，拡張された数は扱うことがで
+きない．
+
+\texttt{array}は，配列につく型で，要素の型を表す型 $t$ と配列の要素数
+$n$ を引数としてとる．配列の要素数がわからない場合は，ポインタ型で置き換え
+られる．
+
+\texttt{function}は，関数につく型で，引数の型 $t\ \mathit{list}$ と返り値の
+型 $t$を引数としてる．こちらも\ref{clight}節で説明したように，可変長引数の
+関数は扱うことができない．そのため，$t\ \mathit{list}$ の長さは関数ごとに固
+定である．
+
+\texttt{sturct}と\texttt{union}は，構造体につく型で，構造体の名前を表す
+$\mathit{id}$ とフィールドの型 $\mathit{fl}$ を引数としてとる．
+$\mathit{fl}$ は，どの構造体のフィールドなのかを表す $\mathit{id}$ と各フィールド
+の型を表す $t$ の組のリストになっている．
+
+\texttt{comp\_ptr}は，構造体内で自己参照しているポインタにつく型で，構造
+体の名前を表す \textit{id} を引数として取る．C言語では，再帰のある構造体を作る際，
+自分自身を指すフィールドは必ずポインタ型でないといけない．そのため，特別
+な型として\texttt{comp\_ptr}を用意することで，フィールドに直接
+\texttt{struct}型がでてくることを防いでいる．
+
+次に，上記の型を\ref{section2}で説明した所有権の概念で拡張する．ただし本
+システムでは，\texttt{array}と\texttt{union}をま扱っていないため，省略す
+る．
+
+\begin{definition}[型]
+  拡張後の型を図\ref{extend_clight_type}のように定義する．
+\end{definition}
+\begin{figure}[htbp]
+  \centering
+  \fbox{$
+  \begin{aligned}
+    t\ (\mathit{types})\ ::=
+    \ & \texttt{int} (\mathit{intsize},\,\mathit{signedness})\ |
+    \ \texttt{float}(\mathit{floatsize})\ |
+    \ \texttt{void} \ \\
+    \ |\ &\texttt{pointer}(t,\,o)\ |
+    \ \texttt{function}(t_{1}\ \mathit{list},\,t_{2}\ \mathit{list},\,t) \ \\
+    \ |\ &\texttt{struct}(\mathit{id},\,\mathit{fl})\ \\
+    \ |\ &\texttt{comp\_ptr}(\mathit{id},\,n,\,o)\ |
+    \ \texttt{Tplus}((\mathit{id},\,n)\ \mathit{list}) \ \\
+    \mathit{intsize} ::= \ & \texttt{I8\ |\ I16\ |\ I32} \\
+    \mathit{floatsize} ::= \ & \texttt{F32\ |\ F64} \\
+    \mathit{fl}\ (\mathit{fieldlist})\ ::=
+    \ &(\mathit{id},\,t)\ list \\
+    o \ (\mathit{ownership})\ ::=
+    \ &\texttt{Ovar}(n)\ |\ \texttt{Oconst}(n)\ |\ \texttt{Oplus}(o,o)
+  \end{aligned}
+  $}
+  \caption{拡張された型}
+  \label{extend_clight_type}
+\end{figure}
+
+ポインタにつく型 \texttt{pointer} と，再帰のある構造体内で自己参照してい
+るポインタにつく型 \texttt{comp\_ptr} には所有権 $o$ を追加する．所有権に
+は3種類あり，所有権変数を表わす $\texttt{Ovar}(n)$ と，定数を表す
+$\texttt{Oconst}(n)$ と， 所有権同士の足し算を表す$\texttt{Oplus}(o, o)$
+である．$\texttt{Ovar}(n)$ の $n$ は整数で，それぞれの所有権変数を区別す
+るための識別子として使われる．$\texttt{Oconst}(n)$ の $n$ は0か1の整数で
+ある．所有権は0以上1以下の有理数だが，制約生成の段階で定数として現れるの
+は0か1だけなので，$n$を整数としても問題ない．
+
+また，\texttt{function}の型にもう一つ $t\ \mathit{list}$ を追加してある．
+関数の実行により，関数の引数の所有権の値が変わることがあり，関数の実行後
+に引数がどういう型になるのか記録しておく必要があるため，これを追加した．
+
+\texttt{comp\_ptr}には更に，整数$n$を追加してある．\texttt{comp\_ptr}は，
+再帰のある構造体内で，自分を参照しているポインタにつく型なので，常に同じ
+名前の構造体を参照していることになる．しかし，ポインタに所有権の情報を追
+加したため，名前が同じ構造体でも各フィールドの所有権が違う構造体を作るこ
+とができる．整数$n$は，この名前が同じだがフィールドの所有権が違う構造体を
+区別するための識別子である．
+
+更に新しい型として，$\texttt{Tplus}((\mathit{id},\ n)\ \mathit{list})$ を
+追加した．これは，再帰のある構造体同士の足し算を表している型で，引数とし
+て構造体の名前 $\mathit{id}$と上で述べた名前が同じだが所有権が違う構造体
+を区別するための識別子 $n$ の組のリストを引数として取る．
+
+
+次に，式について説明する．元のClightの式の定義には，$\&x$と，
+$(\mathit{type})\ e$も定義されている．それぞれ，変数$x$のアドレスをとって
+くる操作と，式$e$の型を$\mathit{type}$に変換する操作を表している．本シス
+テムでは扱っていないため，省略する．
+
+\begin{definition}[式]
+式を図\ref{clight_expr}のように定義する．
+\end{definition}
+\begin{figure}[htbp]
+  \centering
+  \fbox{$
+  \begin{aligned}[h]
+    e\ (\mathit{expression})\ ::=
+    \ & \texttt{const}\ |\ x\ |\ \texttt{temp}\ |\ \texttt{*}x\ |\ e.f \\
+    |\ &\mathit{unop}\ e\ |\ e_{1}\ \mathit{binop}\ e_{2}\ \\
+    \mathit{unop} ::=
+    \ & \texttt{-}\ |\ \texttt{\~{}}\ |
+    \ \texttt{!} \\
+    \mathit{binop} ::=
+    \ & \texttt{+} \ |\ \texttt{-} \ |
+    \ \texttt{*}\ |\ \texttt{/} \ |
+    \ \texttt{\%} \ \\
+    \ |\ & \texttt{<<} \ |\ \texttt{>>}\ |\ \texttt{\&}\ |
+    \ \texttt{|} \ |\ \texttt{\^{\ }} \ \\
+    \ |\ &\texttt{<} \ |\ \texttt{<=}\ |\ \texttt{>}\ |\ \texttt{>=}
+    \ |\ \texttt{==}\ |\ \texttt{!=}
+  \end{aligned}
+  $}
+  \caption{式}
+  \label{clight_expr}
+\end{figure}
+
+\texttt{const} は定数で，\texttt{int}型と\texttt{float}型の2種類ある．
+$x$は変数で，\texttt{temp}は，コンパイラが用意した一時変数である．
+$\mathit{*x}$はポインタの参照で，$e.f$は構造体のフィールドアクセスである．
+$\mathit{unop}\ e$と$e_{1}\ \mathit{binop}\ e_{2}$は，それぞれ単項演算と
+二項演算で，使える演算子は上記の通りである．\ref{clight}節で述べたようにイ
+ンクリメントのような，副作用を起こす操作は式の段階では定義されていない．
+
+続いて，文について説明する．元のClightの文には，goto文とlabel文が定義され
+ているが，今回の型システムでは扱っていないため省略してある．また，新しい
+文として，$\texttt{free}(e)$，$t = \texttt{malloc}(e)$，
+$\texttt{assert}(e_{1},\ e_{2})$，$\texttt{assert\_null}(e)$を追加した．
+
+\begin{definition}[文]
+文を図\ref{clight_stmt}のように定義する．
+\end{definition}
+\begin{figure}[htbp]
+  \centering
+  \fbox{$
+  \begin{aligned}[h]
+    s\ (\mathit{statement})\ ::=
+    \ & \texttt{skip}\ |\ e_{1} = e_{2}\ |\ f(\tilde{e})\ | \ t = f(\tilde{e})\ |
+    \ s_{1};\ s_{2} \\
+    |\ &\texttt{free}(e)\ |\ t = \texttt{malloc}(e)\ \\
+    |\ &\texttt{assert}(e_{1},\ e_{2})\ |\ \texttt{assert\_null}(e)\ \\
+    |\ &\texttt{if}\ e\ \texttt{then}\ s_{1}\ \texttt{else}\ s_{2}\ |
+    \ \texttt{switch}(e)\ \mathit{sw} \\
+    |\ & \texttt{loop}(s_{1})\ s_{2}\ |\ \texttt{break}\ |\ \texttt{continue}\ \\
+    |\ & \texttt{return}(e)\ \\
+    \mathit{sw}\ (\mathit{switch\ cases})\ ::=
+    \ & \texttt{default}:\ s \\
+    |\ &\texttt{case}\ n:\ s;\ \mathit{sw}
+  \end{aligned}
+  $}
+  \caption{文}
+  \label{clight_stmt}
+\end{figure}
+
+$e_{1} = e_{2}$は代入で，$e_{1}$の評価結果に，$e_{2}$の評価結果を代入する．
+\ref{section2}では，$value\ types$にポインタ型しかなかったため，ポインタの
+参照先の更新しかなかったが，この型システムでは\texttt{int}や
+\texttt{float}などの変数の代入も行うことができる．
+
+$f(\tilde{x})$は関数呼び出しで，関数$f$を引数$\tilde{x}$で呼ぶ．
+$\texttt{temp} = f(\tilde{x})$は，関数を呼んだ後，更にその関数の返り値を
+\texttt{temp}に代入する．\ref{section2}では，関数に返り値が定義されていな
+かったが，Clightでは返り値のある関数が定義されているので，この文が定義さ
+れている．$\texttt{free}(e)$は，$e$の参照先を解放する．$e$を参照するので，
+$e$はポインタ型でないといけない．$\texttt{temp} = \texttt{malloc}(e)$は，
+新しいメモリ領域を確保して，それを\texttt{temp}に代入する．
+\texttt{assert}と\texttt{assert\_null}は，型チェックのための注釈に相当す
+る命令である．$\texttt{assert}(e_{1},\ e_{2})$は$e_{1}$と$e_{2}$が値の等
+しいポインタであることをチェックする文である．この命令は型システムでは，
+$e_{1}$と$e_{2}$の所有権を分配するという機能を持っている．
+$\texttt{assert\_null}(e)$は$e$の評価結果が\texttt{null}であることをチェッ
+クする命令である．この命令は型システムでは，$e$がその後任意の型をもつこと
+ができるということを表す．\texttt{free}や\texttt{malloc}，
+\texttt{assert}は構文上は関数呼び出しと同じだが，これらの命令は，所有権に
+関して特別な操作を行うため，別の命令として定義してある．
+
+$\texttt{if}\ e\ \texttt{then}\ s_{1}\ \texttt{else}\ s_{2}$は，$e$の評価
+結果が$0$でない場合$s_{1}$を実行し，$0$の場合$s_2$を実行する．
+$\texttt{switch}(e)\ sw$は，$e$の評価結果に応じて，$\mathit{sw}$の中の
+$s$を実行する．$\mathit{sw}$中の各$s$は，\texttt{break}で終わらなければな
+らない．$\texttt{loop}(s_{1}) s_{2}$は，$s_{1}; s_{2}$を繰り返し実行する．
+$s_1$が\texttt{skip}の場合，\texttt{while}文に対応し，それ以外の場合，
+\texttt{for}文に対応する．\texttt{break}は，それ以降の命令を実行せずに，
+ブロックを抜ける．\texttt{continue}は，それ以降の命令を実行せずに，次のルー
+プを実行する．Clightでは，\texttt{while}や\texttt{for}は全て無限ループに
+変換され，ループの脱出には，\texttt{if}文と\texttt{break}文を使う．
+
+最後に，プログラムについて定義する．元のClightのプログラムでは，大域変数
+が定義されている，つまり$\mathit{Promgrams}$の定義の中に$\mathit{dcl}$が
+含まれているが，本システムでは扱っていないため省略している．
+
+\begin{definition}[プログラム]
+  Clightのプログラムを図\ref{clight_program}のように定義する．
+\end{definition}
+\begin{figure}[htbp]
+  \centering
+  \fbox{$
+  \begin{aligned}[h]
+    P\ (\mathit{Programs})\ ::=
+        \ & \mathit{Fd}\ \mathit{list};\ \texttt{main} = \mathit{id} \\
+    \mathit{dcl}\ (\mathit{declarations})\ ::=
+        \ & (t,\ \mathit{id})\ \mathit{list} \\
+    \mathit{Fd}\ (\mathit{Function\ definitions})\ ::=
+        \ & F\ |\ \mathit{Fe}\ \\
+    F\ (\mathit{Internal\ functions})\ ::=
+        \ & (t,\ id,\ \mathit{dcl}_{1},\ \mathit{dcl}_{2},\ s) \\
+    \mathit{Fe}\ (\mathit{External\ functions})\ ::=
+        \ & (\texttt{extern},\ t,\ \mathit{id},\ \mathit{dcl})
+  \end{aligned}
+  $}
+  \caption{プログラム}
+  \label{clight_program}
+\end{figure}
+
+変数宣言$\mathit{dcl}$は，変数の型と変数の名前の組のリストになっている．
+内部関数$F$は，プログラム内で定義されている関数で，関数の返り値$t$，関数
+名$\mathit{id}$，引数$\mathit{dcl}_1$，局所変数$\mathit{dcl}_2$，関数本体
+$s$の組になっている．\ref{clight}節で述べたように，Clightではブロック内な
+どで変数宣言はできず，全て関数の先頭で宣言されるため，$\mathit{dcl}_2$の
+ように予め局所変数を全て取ってくることができる．外部関数$\mathit{Fe}$は，
+プログラム外で定義されている関数で，$\mathit{Fd}$は，内部関数と外部関数の
+どちらかである．プログラム$P$は，この$\mathit{Fd}$のリストと，プログラム
+実行時に最初に呼ばれる関数$\texttt{main}$で定義されている．
+
+上記の式(図\ref{clight_expr})と文(図\ref{clight_stmt})に対して，型付け規
+則を与える．基本的には，\ref{section2}の図\ref{typing_rules}を拡張する形
+で与える．
+
+まず，式についての型付け規則を定義する．式が型付け可能か判断する型判断は，
+$\Gamma \vdash^{w/r} e:t$の形をしている．型環境$\Gamma$のもと
+で$e$を評価すると$e$に$t$という型がつくということを表している．$w/r$は，
+$e$に対して書き込みが行われているかどうかを区別するためのラベルである．
+$w$の時は変数に対して書き込みが行われているという意味である．$r$の
+時，変数の読み込みが行われているという意味である．
+
+
+\begin{definition}[式]
+式の型付け規則を図\ref{typing_expr}のように定義する．
+\end{definition}
+\begin{figure}[htbp]
+ \small
+  \infrule[Evar]{
+  }
+  {
+  \Gamma,\ x:t \vdash^{w/r} x:t
+  }
+
+  \infrule[Etemp]{
+  }
+  {
+  \Gamma,\ \texttt{temp}:t \vdash^{w/r} \texttt{temp}: t
+  }
+
+  \infrule[Econst]{
+  }
+  {
+  \Gamma \vdash^{w/r} \texttt{const}:\texttt{void}
+  }
+
+
+  \infrule[Eunop]{
+  \Gamma \vdash^{w/r} e:t \andalso
+  \mathit{unop} : t \rightarrow t'
+  }
+  {
+  \Gamma \vdash^{w/r} \mathit{unop}\ e:t'
+  }
+
+  \infrule[Ebinop]{
+  \Gamma \vdash^{w/r} e_{1}:t \andalso
+  \Gamma \vdash^{w/r} e_{2}:t' \andalso
+  \mathit{binop} : t \rightarrow t' \rightarrow t''
+  }
+  {
+  \Gamma \vdash^{w/r} e_{1}\ \mathit{binop}\ e_{2}:t''
+  }
+
+  \infrule[Ederef\_r]{
+  0 < o
+  }
+  {
+  \Gamma,\ x:\texttt{pointer}(t,\ o) \vdash^{r} \mathit{*x}:t
+  }
+
+  \infrule[Ederef\_w]{
+  o = 1
+  }
+  {
+  \Gamma,\ x:\texttt{pointer}(t,\ o) \vdash^{w} \mathit{*x}:t
+  }
+
+  \infrule[Efield]{
+  fl(id) = t
+  }
+  {
+  \Gamma,\ x:\texttt{struct}(\mathit{id},\ \mathit{fl}) \vdash^{w/r} x.f:t
+  }
+  \caption{式の型付け規則}
+  \label{typing_expr}
+\end{figure}
+
+E{\footnotesize VAR}とE{\footnotesize TEMP}はそれぞれ変数と一時変数に関す
+る型付け規則で，型環境内に登録されている型をそのまま式の型とすればよい．
+E{\footnotesize CONST}は定数に関する型付け規則で，定数には\texttt{int}型
+と\texttt{float}型とがあるが，今回のメモリリーク検出には必要ない情報なので，
+全て\texttt{void}型としている．E{\footnotesize UNOP}とE{\footnotesize
+BINOP}は演算に関する型付け規則である．$\mathit{unop}$と$\mathit{binop}$
+を関数とみなして，引数の型があっていることを確かめている．
+
+E{\footnotesize DEREF\_R}とE{\footnotesize DEREF\_W}はそれぞれポインタの
+参照に関する型付け規則である．E{\footnotesize DEREF\_R}は右辺値の場合で，
+ポインタの参照先から値の読み込みを行っているので，$0$より大きい所有権が必
+要になる．E{\footnotesize DEREF\_W}は左辺値の場合で，ポインタの参照先に書
+き込みを行っているので，$1$の所有権が必要になる．また，それぞれポインタの
+参照に関する型付け規則なので，$x$は\texttt{pointer}型でなければならない．
+
+E{\footnotesize FIELD}はフィールドアクセスに関する型付け規則である．
+$\mathit{fl}$をフィールド名から型への写像とすると，
+$\mathit{fl}(\mathit{id}) = t$でアクセスしようとしているフィールド名がき
+ちんと定義されているかものかどうかを確認している．フィールドアクセスに関
+する型付け規則なので，$x$は\texttt{struct}型でなければならない．
+
+続いて，文の型付け規則を定義する．文が型付け可能か判断する型判断は，
+$\Theta;\ B;\ C;\ \Gamma \vdash s \Rightarrow \Gamma'$の形をしている．
+$\Theta$は関数環境で，関数名から関数の型への写像である．$\Gamma$は型環境
+で，変数名から変数の型への写像である．$B$は\emph{\texttt{break}環境}で，
+\texttt{break}が呼ばれた際に使用する．定義は型環境と同じで，変数名から変
+数の型への写像である．\texttt{break}が実行された際に，ループを抜けた後の
+型環境を記録しておくために使う．$C$は\emph{\texttt{continue}環境}で，
+\texttt{break}環境と同様に，定義は型環境と同じである．\texttt{continue}が
+実行された際に，次のループを実行するために，ループ実行前の型環境を記録し
+ておくために使う．関数環境$\Theta$，\texttt{break}環境$B$，
+\texttt{continue}環境$C$，型環境$\Gamma$のもとで，文$s$を実行すると，実行
+後の型環境が$\Gamma'$になるという意味である．
+
+\begin{definition}[文]
+文の型付け規則を図\ref{typing_stmt}のように定義する．
+\end{definition}
+
+\begin{figure}[H]
+\small
+\infrule[Sskip]{
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash \texttt{skip} \Rightarrow \Gamma'
+}
+~\\[-5pt]
+\infrule[Sassign]{
+\Gamma\ \vdash^{w} e_{1}:t_{1} \andalso
+\Gamma\ \vdash^{r} e_{2}:t_{2} \andalso
+\Gamma'\ \vdash^{w} e_{1}:t_{1}' \andalso
+\Gamma'\ \vdash^{r} e_{2}:t_{2}' \\
+\texttt{empty}(t_{1}) \andalso
+t_{2} = t_{1}' + t_{2}'
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash e_{1} = e_{2} \Rightarrow
+\Gamma'
+}
+~\\[-5pt]
+\infrule[Scall\_set]{
+\Theta(f) = \tilde{t} \rightarrow \tilde{t}' \andalso
+\texttt{empty}(t_{0}) \andalso
+\texttt{return}(f) = t_{1}
+}
+{
+\Theta;\ B;\ C;\ \Gamma,\ \texttt{temp} : t_{0},\ \tilde{x} : \tilde{\tau} \vdash
+\texttt{temp} = f(\tilde{x}) \Rightarrow
+\Gamma,\ t : t_{1},\ \tilde{x} : \tilde{\tau}'
+}
+~\\[-5pt]
+\infrule[Scall]{
+\Theta(f) = \tilde{t} \rightarrow \tilde{t}'
+}
+{
+\Theta;\ B;\ C;\ \Gamma,\ \tilde{x} : \tilde{t} \vdash f(\tilde{x}) \Rightarrow
+\Gamma,\ \tilde{x} : \tilde{t}'
+}
+~\\[-5pt]
+\infrule[Sfree]{
+o = 1 \andalso o' = 0 \andalso \texttt{empty}(t)
+}
+{
+\Theta;\ B;\ C;\ \Gamma,\ x:\texttt{Tpointer}(t,\ o) \vdash \texttt{free}(x)
+\Rightarrow \Gamma,\ x:\texttt{Tpointer}(t,\ o')
+}
+~\\[-5pt]
+%TODO: hboxがはみ出てる
+\infrule[Smalloc]{
+o = 0 \andalso o' = 1 \andalso \texttt{empty}(t)
+}
+{
+\Theta;\ B;\ C;\ \Gamma,\ \texttt{temp} : \texttt{Tpointer}(t, o)\ \vdash
+\texttt{temp} = \texttt{malloc}(e) \Rightarrow
+\Gamma,\ \texttt{temp} : \texttt{Tpointer}(t, o')
+}
+~\\[-5pt]
+\infrule[Sassert]{
+\Gamma\ \vdash^{r} e_{1}:t_{1} \andalso
+\Gamma\ \vdash^{r} e_{2}:t_{2} \andalso
+\Gamma'\ \vdash^{r} e_{1}:t_{1}' \andalso
+\Gamma'\ \vdash^{r} e_{2}:t_{2}' \\
+t_1 + t_2 = t_3 + t_4
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash
+\texttt{assert}(e_{1},\ e_{2})
+\Rightarrow \Gamma'
+}
+~\\[-5pt]
+\infrule[Snull]{
+\Gamma \vdash^{r} e:t \andalso
+\Gamma' \vdash^{r} e:t'
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash
+\texttt{assert\_null}(e)
+\Rightarrow \Gamma'
+}
+~\\[-5pt]
+\infrule[Sseq]{
+\Theta;\ B;\ C;\  \Gamma \vdash s_{1} \Rightarrow \Gamma'' \andalso
+\Theta;\ B;\ C;\  \Gamma'' \vdash s_{2} \Rightarrow \Gamma'
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash s_{1};\ s_{2} \Rightarrow \Gamma'
+}
+~\\[-5pt]
+\infrule[Sif]{
+\Theta;\ B;\ C:\ \Gamma \vdash s_1 \Rightarrow \Gamma_1 \andalso
+\Theta;\ B;\ C;\ \Gamma \vdash s_2 \Rightarrow \Gamma_2 \andalso
+\Gamma_1 = \Gamma_2
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash \texttt{if} (e)\ \texttt{then}\ s_1\ \texttt{else}\ s_2
+\Rightarrow \Gamma_2
+}
+~\\[-5pt]
+%TODO: hbox
+\end{figure}
+
+\begin{figure}[H]
+\small
+\infrule[Sswitch]{
+\Theta;\ B;\ C;\ \Gamma \vdash s_1 \Rightarrow \Gamma_1 \andalso
+\dots \andalso
+\Theta;\ C;\ \Gamma \vdash s_m \Rightarrow \Gamma_m \andalso \\
+\Gamma' = \Gamma_1 = \Gamma_2 = \dots = \Gamma_m
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash
+\texttt{switch}(e)\ \texttt{case}\ n_{1}:\ s_1;\ \texttt{case}\ n_{2}:
+\ s_2;\ \dots\ \texttt{case}\ n_{m}:\ s_m;
+\Rightarrow \Gamma'
+}
+\infrule[Sloop]{
+\Gamma';\ \Gamma;\ \Gamma \vdash s_1 \Rightarrow \Gamma_1 \andalso
+\Gamma';\ \Gamma;\ \Gamma_1 \vdash s_2 \Rightarrow \Gamma_2 \andalso
+\Gamma_2 = \Gamma
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash \texttt{loop}(s_1)\ s_2
+\Rightarrow \Gamma'
+}
+~\\[-5pt]
+\infrule[Sbreak]{
+}
+{
+\Theta;\ \Gamma;\ C;\ \Gamma \vdash \texttt{break}
+\Rightarrow \Gamma'
+}
+~\\[-5pt]
+\infrule[Scontinue]{
+}
+{
+\Theta;\ B;\ \Gamma;\ \Gamma \vdash \texttt{continue}
+\Rightarrow \Gamma'
+}
+~\\[-5pt]
+\infrule[Sreturn]{
+\Gamma \vdash e:t \andalso
+\Gamma' \vdash e:t' \andalso
+t = \texttt{return}(f) + t'
+}
+{
+\Theta;\ B;\ C;\ \Gamma \vdash \texttt{return}\ e
+\Rightarrow \Gamma
+}
+\caption{文の型付け規則}
+\label{typing_stmt}
+\end{figure}
+
+S{\footnotesize CALL\_SET}は，関数の返り値を変数に代入する際の規則である．
+\ref{section2}の関数は返り値がなかったため，この型付け規則も定義されてい
+なかった．変数に代入するため，その変数の所有権は全て$0$でなければならない．
+また代入後には，その変数の型と関数の返り値の型とが等しくなる．
+
+S{\footnotesize NULL}は，\texttt{assert\_null}の規則である．
+$\texttt{assert\_null}(e)$は，$e$がヌルポインタであることを表すための命令
+で，この型システムでは，\ref{section2}の型システムと同様，ヌルポインタは
+任意の型をもつことができる．そのため，$\texttt{assert\_null}(e)$実行後，
+$e$は任意の型を持つことができる．
+
+S{\footnotesize SWITCH}は，\texttt{switch}文の規則で，S{\footnotesize
+IF}と同様，それぞれの分岐に関して型がつくかどうか調べる．それぞれの分岐終
+了後の型環境は，全て等しくなければならない．
+
+S{\footnotesize LOOP}は，\texttt{loop}文の規則である．$s_{1}$が
+\texttt{skip}の時，\texttt{while}に対応し，それ以外の場合\texttt{for}に対
+応する．まず\texttt{break}環境が$\Gamma'$，\texttt{continue}環境が
+$\Gamma$，型環境が$\Gamma$の元で，$s_{1}$に型がつくかどうか調べる．
+\texttt{break}はそれ以降の命令を実行せず，ループを抜けるという命令なので，
+$s_{1}$で\texttt{break}が呼ばれるとループを抜け，実行後の環境になるように，
+\texttt{break}環境に実行後の環境$\Gamma'$を入れる．\texttt{continue}は，
+それ以降の命令を実行せず，次のループを実行するという命令なので，$s_{1}$で
+\texttt{continue}が呼ばれると次のループを実行できるように
+\texttt{continue}環境にループ実行前の環境である$\Gamma$を入れる．次に，
+\texttt{break}環境が$\Gamma'$，\texttt{continue}環境が$\Gamma$，型環境が
+$s_{1}$実行後の型環境$\Gamma_{1}$のもとで$s_{2}$に型がつくかどうか調べる．
+これも$s_{1}$の処理と同様である．$s_{2}$を実行後，また$s_{1}$を実行するの
+で，$s_{2}$の実行後の型環境$\Gamma_{2}$と，$s_{1}$の実行前の型環境
+$\Gamma$は等しくなければならない．
+
+S{\footnotesize BREAK}は，\texttt{break}文の規則である．\texttt{break}環
+境と型環境が等しい状態で，\texttt{break}を実行すると実行後の型環境は，任
+意の型環境になる．
+
+S{\footnotesize CONTINUE}は，\texttt{continue}文の規則である．
+\texttt{break}の規則と同様に，\texttt{continue}環境と型環境が等しい状態で，
+\texttt{continue}を実行すると実行後の型環境は，任意の型環境になる．
+
+S{\footnotesize RETURN}は，\texttt{return}文の規則である．
+$\texttt{return}(f)$は，関数$f$の返り値の型を表している．\texttt{return}
+実行前の$e$の型についている所有権を，関数の返り値と実行後の$e$の型とに分
+配している．
+
+\begin{example}[型付け規則]
+  図\ref{extend_typing_example}のプログラムを例に挙げる．なお，\verb|x|に
+  関しては，所有権を持っていないため，省略する．
+\begin{figure}[htbp]
+    \begin{lstlisting}
+int main() {
+    int x;
+    int *p;
+
+    x = 0;
+    /* p: Tpointer(int, Oconst(0)) */
+    while (1) {
+        p = malloc(sizeof (int));
+        /* p: Tpointer(int, Oconst(1)) */
+        if (x > 5) {
+            break;
+        }
+        /* p: Tpointer(int, Oconst(1)) */
+        free(p);
+        /* p: Tpointer(int, Oconst(0)) */
+        x = x + 1;
+    }
+
+    /* p: Tpointer(int, Oconst(1)) */
+    free(p);
+    /* p: Tpointer(int, Oconst(0)) */
+    return 0;
+}
+  \end{lstlisting}
+  \caption{型付け規則の例}
+  \label{extend_typing_example}
+\end{figure}
+
+  まず\verb|p|を型環境に追加する．変数宣言時は全ての所有権が$0$でなければ
+  ならないため，\verb|p|の型は\verb|Tpointer(int, OConst(0))|である．7行
+  目から\verb|while|が実行され，8行目で\verb|malloc|が呼ばれているため，
+  所有権$1$が与えられ，\verb|p|の型が\verb|Tpointer(int, Oconst(1))|にな
+  る．次に\verb|break|が実行されているため，S{\footnotesize BREAK}から，
+  \verb|break|が実行される前の環境と\texttt{break}環境が等しくなる．
+  \texttt{break}環境は，S{\footnotesize LOOP}から，実行後の型環境になって
+  いるため，ループを抜けた19行目の時点での\verb|p|の型は，
+  \verb|Tpointer(int, OCosnt(1))|になる．\verb|break|を実行した後は任意の
+  型環境になるため，13行目の時点での\verb|p|の型を
+  \verb|Tpointer(int, Oconst(1))|とすれば，14行目の\verb|free(p)|が実行で
+  きるようになる．\verb|free(p)|を実行すると所有権が$0$になるため，15行目
+  時点で\verb|p|の型が\verb|Tpointer(int, Oconst(0))|になる．これが，ルー
+  プ実行前の型環境と等しいため，\verb|while|に正しく型がついていることが
+  わかる．\verb|while|実行後の20行目の\verb|free(p)|も\verb|p|に所有権
+  $1$が与えられているため実行ができる.  実行後の\verb|p|の型が
+  \verb|Tpointer(int, Oconst(0))|になる．関数の終了時点で，関数内で宣言さ
+  れているポインタ\verb|p|の所有権が$0$になっているため，このプログラム全
+  体に正しく型がついていることがわかる．
+
+\end{example}

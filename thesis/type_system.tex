@@ -1,0 +1,565 @@
+\subsection{言語}
+まず，型システムで扱う言語について定義する．
+
+\begin{definition}[言語]
+言語の構文を図\ref{syntax}のように定義する．
+\end{definition}
+  \begin{figure}[h]
+    \centering
+    \fbox
+    {$
+    \begin{aligned}[h]
+      s\ (\mathit{command})\ ::=
+      \ & \texttt{skip\ }|\ \mathit{*x} \leftarrow y \ |\ s_1;s_2\ |
+      \ \texttt{free} (x)
+      \ |\ \texttt{let}\ x = \texttt{malloc}()\ \texttt{in}\ s\ \\[-3pt]
+      \ |\ &\texttt{let}\ x = \texttt{null\ in\ }s \ |
+      \ \texttt{let\ } x = y \ \texttt{in\ } s \ |
+      \ \texttt{let} \ x = \mathit{*y} \ \texttt{in\ } s \\[-3pt]
+      \ |\ &\texttt{ifnll}\ (x)\ \texttt{then}\ s_1 \ \texttt{else}\ s_2\ |
+      \ f(x_1, \dots ,x_n) \\[-3pt]
+      \ |\ &\texttt{assert}(x_1,\,x_2) \\[-3pt]
+      d\ (\mathit{definitions})\ ::=
+      \ & f(x_1,\dots,x_n) = s \\
+    \end{aligned}
+    $}
+    \caption{言語}
+    \label{syntax}
+  \end{figure}
+
+プログラムは，$\mathit{definitions}$の集合を$D$とすると，$(D,\,s)$の組で
+与えられる．関数定義には返り値がないが，参照を渡すことで関数から値を返
+す動作をエンコードすることができる．
+
+\texttt{skip}は何もしない命令である．
+$\mathit{*x} \leftarrow y$ は $\mathit{x}$が参照しているメモリ領域を
+$\mathit{y}$で更新する．$s_1;s_2$は$s_1$を実行した後$s_2$を実行する．
+$\texttt{free} (x)$ は$\mathit{x}$が参照しているメモリ領域を解放する．
+$\texttt{let}\ x = \texttt{malloc}()\ \texttt{in}\ s\ $
+は新しいメモリ領域を確保し，$\mathit{x}$をそれに束縛して$s$を実行する．
+$\texttt{let}\ x = \texttt{null\ in\ }s $ は $\mathit{x}$ を
+$\texttt{null}$に束縛して$s$を実行する．
+$\texttt{let\ } x = y \ \texttt{in\ } s $ は $\mathit{x}$ を
+$y$に束縛して$s$を実行する．
+$\texttt{let} \ x = \mathit{*y} \ \texttt{in\ } s$は$\mathit{x}$を
+$\mathit{y}$ の参照先に束縛して$s$を実行する．
+$\texttt{ifnll}\ (x)\ \texttt{then}\ s_1 \ \texttt{else}\ s_2$ は
+$\mathit{x}$が$\texttt{null}$の場合$s_1$を実行し，
+それ以外の場合は$s_2$を実行する．
+$f(x_1, \dots, x_n)$は引数$x_1, \dots, x_n$で関数$f$を呼ぶ．
+$\texttt{assert}(x_1,x_2)$は$x_1$と$x_2$が同じメモリ領域を参照している場合は
+何もせず，そうでない場合はプログラムの実行を停止する．
+
+\subsection{操作的意味論}
+上記の言語(図\ref{syntax})に対して操作的意味論を定義する．操作的意味論と
+は，実行状態の遷移によって，プログラムに意味を与えるための数学的定義であ
+る．この論文の意味論では，プログラムの実行状態は$\langle H,\,R,\,E
+\rangle$の三つ組で表現される．$\mathcal{H}$をヒープ領域のアドレスを表す集
+合とすると，$H$は$\mathcal{H}$から$\mathcal{H} \cup \{\texttt{null}\}$へ
+の写像で定義され，$R$は変数から$\mathcal{H} \cup \{\texttt{null}\}$への写
+像で定義される．$H$と$R$はそれぞれ，ヒープ領域とレジスタをモデル化してい
+る．また，$E$は，評価文脈で $E ::= [\,]\,|\,E;\,s$ で定義される．評価文脈
+は命令の実行順序を決めるもので，$[\,]$の中には次に実行する命令が入る．
+$E[s]$は，$E$の中の$[\,]$を$s$で置き換えたものを表す．
+
+
+\begin{definition}[操作的意味論]
+操作的意味論を図\ref{semantics}のように定義する．
+\end{definition}
+
+\begin{figure}[htbp]
+    \small
+    \infrule{~}{\langle H,\,R,\,E[\texttt{skip};\,s] \rangle \longrightarrow_{D}
+    \langle H,\,R,\,E[s] \rangle}
+    ~\\
+    \infrule{R(x)\,\in\,dom(H)}{\langle H,\,R,\,E[\mathit{*x}\,\leftarrow\,y]
+    \rangle \longrightarrow_{D} \langle H\{R(x)\,\mapsto
+    \,R(y)\},\,R,\,E[\texttt{skip}] \rangle}
+    ~\\
+    \infrule{R(x)\,\in \,dom(H) \,\cup \,\{\texttt{null}\}}
+    {\langle H,\,R,\,E[\texttt{free}(x)] \rangle \longrightarrow_{D}
+    \langle H \setminus \{R(x)\},\,R,\,E[\texttt{skip}] \rangle}
+    ~\\
+    \infrule{x'\,\notin\,dom(R)}
+    {\langle H,\,R,\,E[\texttt{let}\ x \  = \ \texttt{null\ in}\ s] \rangle
+    \longrightarrow_{D} \langle H,\,R\{x' \,\mapsto
+    \,\texttt{null}\},\,E[[x'/x]s] \rangle}
+    ~\\
+    \infrule{x'\,\notin\,dom(R)}
+    {\langle H,\,R,\,E[\texttt{let}\ x\ =\ y\ \texttt{in}\ s] \rangle
+    \longrightarrow_{D} \langle H,\,R\{x'\,\mapsto\,R(y)\},\,E[[x'/x]s] \rangle}
+    ~\\
+    \infrule{x'\,\notin\,dom(R)}
+    {\langle H,\,R,\,E[\texttt{let}\ x\ =\ \mathit{*y}\ \texttt{in}\ s] \rangle
+    \longrightarrow_{D} \langle H,\,R\{x'\,\mapsto\,H(R(y))\},\,E[[x'/x]s]
+    \rangle}
+    ~\\
+    \infrule{h\,\notin\,dom(H) ~~~ x'\,\notin\,dom(R)}
+    {\langle H,\,R,\,E[\texttt{let}\ x\ =\ \texttt{malloc}()\ \texttt{in}\ s]
+    \rangle
+    \longrightarrow_{D} \langle H\{h\,\mapsto\,v\},\,R\{x'\,\mapsto
+    \,h\},\,E[[x'/x]s] \rangle}
+    ~\\
+    \infrule{\ }
+    {\langle H,\,R\{x\,\mapsto\,\texttt{null}\},\,E[\texttt{ifnull}(x)
+    \ \texttt{then}\ s_1\ \texttt{else}\ s_2] \rangle
+    \longrightarrow_{D} \langle H,\,R\{x\,\mapsto\,\texttt{null}\},
+    \ E[s_1] \rangle}
+    ~\\
+    \infrule{R(x)\,\neq\,\texttt{null}}
+    {\langle H,\,R,\,E[\texttt{ifnull}(x)\ \texttt{then}\ s_1\ \texttt{else}\ s_2]
+    \rangle \longrightarrow_{D} \langle H,\,R,\,E[s_2] \rangle }
+    ~\\
+    \infrule{R(x)\,=\,\texttt{null}}{\langle H,\,R,\,E[\mathit{*x}\,
+    \leftarrow\,y] \rangle \longrightarrow_{D} \texttt{NullEx}}
+    ~\\
+    \infrule{R(y)\,=\,\texttt{null}}{\langle H,\ R,
+    \ E[\texttt{let}\ x\ =\ \mathit{*y}\ \texttt{in}\ s] \rangle
+    \longrightarrow_{D} \texttt{NullEx}}
+    ~\\
+\end{figure}
+
+\begin{figure}[h]
+    \small
+    \infrule{R(y)\,\notin\,dom(H)\,\cup\,\{\texttt{null}\}}
+    {\langle H,\,R,\,E[\texttt{let}\ x\ =\ \mathit{*y}\ \texttt{in}\ s] \rangle
+    \longrightarrow_{D} \texttt{Error}}
+    ~\\
+    \infrule{R(x)\,\notin\,dom(H)\,\cup\,\{\texttt{null}\}}{
+    \langle H,\,R,\,E[\texttt{free}(x)] \rangle \longrightarrow_{D}
+    \texttt{Error}}
+    ~\\
+    \infrule{f(\tilde{y})\,=\,s\,\in\,D}{\langle H,\,R,\,E[f(\tilde{x})] \rangle
+    \longrightarrow_{D} \langle H,\,R,\,E[[\tilde{x}/\tilde{y}]s] \rangle}
+    ~\\
+    \infrule{H,\,R\,\models\,P}{\langle H,\,R,\,E[\texttt{assert}(P)] \rangle
+    \longrightarrow_{D} \langle H,\,R,\,E[\texttt{skip}] \rangle}
+    ~\\
+    \infrule{H,\,R\,\not\models\,P}{\langle H,\,R,\,E[\texttt{assert}(P)] \rangle
+    \longrightarrow_{D} \texttt{AssertFail}}
+  \caption{操作的意味論}
+  \label{semantics}
+\end{figure}
+
+例えば，
+{\small
+\infrule{R(x)\,\in \,dom(H) \,\cup \,\{\texttt{null}\}} {\langle
+H,\,R,\,E[\texttt{free}(x)] \rangle \longrightarrow_{D} \langle H
+\setminus \{R(x)\},\,R,\,E[\texttt{skip}] \rangle}}
+は，
+$\texttt{free(x)}$
+の意味を表す規則になっている．まず，前提部分の$R(x)\,\in \,dom(H) \,\cup
+\,\{\texttt{null}\}$は，変数$x$がレジスタに登録されているということを表し
+ている．この条件のもとで，ヒープ領域が$H$，レジスタが$R$の状態で，
+$\texttt{free}(x)$を実行すると，実行後のヒープ領域が$H \setminus
+\{R(x)\}$になり，レジスタが$R$になり，評価文脈が$E[\texttt{skip}]$になる．
+$H \setminus \{R(x)\}$は，$H$から$\{R(x)\}$を取り除くという意味で，これで，
+メモリ領域が解放されたということを表している．
+
+また，
+{\small
+\infrule{h\,\notin\,dom(H) ~~~ x'\,\notin\,dom(R)} {\langle
+H,\,R,\,E[\texttt{let}\ x\ =\ \texttt{malloc}()\ \texttt{in}\ s] \rangle
+\longrightarrow_{D} \langle H\{h\,\mapsto\,v\},\,R\{x'\,\mapsto
+\,h\},\,E[[x'/x]s] \rangle}}
+は，$\texttt{let}\ x\ =\ \texttt{malloc}()\
+\texttt{in}\ s$の意味を表す規則になっている．前提部分の
+$h\,\notin\,dom(H)$は，アドレス$h$がヒープに登録されていないということ，
+つまり新しい領域であるということを表している．また，$x'\,\notin\,dom(R)$
+は，変数$x'$がレジスタに登録されていないということ，つまり新しい変数であ
+るということを表している．この条件のもとで，ヒープ領域が$H$，レジスタが
+$R$の状態で，$\texttt{let}\ x\ =\ \texttt{malloc}()\ \texttt{in}\ s$を実
+行すると，実行後のヒープ領域が$H\{h\,\mapsto\,v\}$，レジスタが
+$R\{x'\,\mapsto\,h\}$，評価文脈が$E[[x'/x]s]$になる．
+$H\{h\,\mapsto\,v\}$は，アドレス$h$の値が$v$であるという情報を，ヒープに
+登録する．アドレス$h$は新しい領域だったので，これで新しいメモリ領域が確保
+されたということを表している．なお，新しく確保された領域の中にどのような
+値が入っているかはわからないので，$v$は$dom(H) \,\cup
+\,\{\texttt{null}\}$の中の任意の値をとることができる．また，
+$R\{x'\,\mapsto\,h\}$は，ポインタ$x'$がアドレス$h$であるという情報をレジ
+スタに登録している．$E[[x'/x]s]$は，$s$の中の$x$を$x'$に置き換えて実行す
+るという意味である．
+
+\texttt{assert}の前提条件にある$H,\,R\,\models\,P$は，以下のように定義される．
+\[
+\begin{aligned}
+  H,\,R\,\models x = y ~~~ &\mathit{iff} ~~~ R(x) = R(y) \\
+  H,\,R\,\models x = *y ~~~  &\mathit{iff} ~~~ R(x) = H(R(y))
+\end{aligned}
+\]
+$P$が$x=y$の時は，$R(x)$と$R(y)$が等しい，つまり$x$と$y$が同じメモリ領域
+を参照している時に成り立つ．$P$が$x=*y$の時は，$x$と$*y$が同じメモリ領域
+を参照している時に成り立つ．
+
+エラーの種類は3つある．(1) $\texttt{null}$に対して読み書きを行うと発生す
+る$\texttt{NullEx}$ (2) 既に解放されたメモリ領域に対して読み書きや，もう
+一度解放を行うと発生する$\texttt{Error}$ (3) $\texttt{assert}$を行った際，
+引数が同じメモリ領域を参照していない際に発生する$\texttt{AssertFail}$ で
+ある．提案された型システムで検出できるのは (2) のエラーだけである．
+
+\begin{example}[操作的意味論]
+  \label{semantics_example}
+  以下のプログラム$s_{0}$を例に挙げる．
+\begin{verbatim}
+    let a = malloc() in
+    let b = a in
+    let c = *a in
+    let d = *b in
+    assert(a = b);
+    free(a)
+\end{verbatim}
+  プログラムの初期状態は$\langle \emptyset,\,\emptyset,\,s_{0} \rangle$で
+  ある．図\ref{semantics}から実行時状態は以下のように遷移していく．なお，
+  $s_{1} := $ \verb|let b = a in| $s_2$，
+  $s_{2} := $ \verb|let c = *a in| $s_3$，
+  $s_{3} := $ \verb|let d = *b in| $s_4$，
+  $s_{4} := $ \verb|assert(a = b); free(a)| である．\\
+  \small
+$
+\begin{aligned}
+  &\langle \emptyset,\,\emptyset,\,
+  \texttt{let}\ a\ = \ \texttt{malloc}()\ \texttt{in}\ s_{1} \rangle \\
+  &\longrightarrow_{D}
+  \langle \{h_{0} \mapsto v_{0}\},\,\{a' \mapsto h_{0}\},\,
+  [a'/a]s_{1} \rangle \\
+  \ \\[-10pt]
+  &\langle \{h_{0} \mapsto v_{0}\},\,\{a' \mapsto h_{0}\},\,
+  \texttt{let}\ b\ =\ a'\ s_{2} \rangle \\
+  &\longrightarrow_{D}
+  \langle \{h_{0} \mapsto v_{0}\},\,
+  \{a' \mapsto h_{0},\ b' \mapsto h_{0}\},\,[b'/b]s_{2} \rangle \\
+  \ \\[-10pt]
+  &\langle \{h_{0} \mapsto v_{0}\},\,\{a' \mapsto h_{0},\ b' \mapsto h_{0}\},\,
+  \texttt{let}\ c\ =\ *a'\ \texttt{in}\ s_{3} \rangle \\
+  &\longrightarrow_{D}
+  \langle \{h_{0} \mapsto v_{0}\},\,
+  \{a' \mapsto h_{0},\ b' \mapsto h_{0},\ c' \mapsto v_{0}\},\,
+  [c'/c]s_{3} \rangle \\
+  \ \\[-10pt]
+  &\langle \{h_{0} \mapsto v_{0}\},\,
+  \{a' \mapsto h_{0},\ b' \mapsto h_{0},\ c' \mapsto v_{0}\},\,
+  \texttt{let}\ d\ =\ *b'\ \texttt{in}\ s_{4} \rangle \\
+  &\longrightarrow_{D}
+  \langle \{h_{0} \mapsto v_{0}\},\,
+  \{a' \mapsto h_{0},\ b' \mapsto h_{0},\ c' \mapsto v_{0},\ d' \mapsto v_{0}\},\,
+  [d'/d]s_{4} \rangle \\
+  \ \\[-10pt]
+  &\langle \{h_{0} \mapsto v_{0}\},\,
+  \{a' \mapsto h_{0},\ b' \mapsto h_{0},\ c' \mapsto v_{0},\ d' \mapsto v_{0}\},\,
+  \texttt{assert}(a' = b');\ \texttt{free}(a') \rangle \\
+  &\longrightarrow_{D}
+  \langle \{h_{0} \mapsto v_{0}\},\,
+  \{a' \mapsto h_{0},\ b' \mapsto h_{0},\ c' \mapsto v_{0},\ d' \mapsto v_{0}\},\,
+  \texttt{skip};\ \texttt{free}(a') \rangle \\
+  &\longrightarrow_{D}
+  \langle \{h_{0} \mapsto v_{0}\},\,
+  \{a' \mapsto h_{0},\ b' \mapsto h_{0},\ c' \mapsto v_{0},\ d' \mapsto v_{0}\},\,
+  \texttt{free}(a)' \rangle \\
+  &\longrightarrow_{D}
+  \langle \emptyset,\,
+  \{a' \mapsto h_{0},\ b' \mapsto h_{0},\ c' \mapsto v_{0},\ d' \mapsto v_{0}\},\,
+  \texttt{skip} \rangle
+\end{aligned}
+$
+\end{example}
+
+\subsection{型}
+次に型システムで扱う型について定義する．
+
+\begin{definition}[型]
+型の構文を図\ref{type}のように定義する．
+  \begin{figure}[H]
+    \centering
+    \fbox
+    {$
+    \begin{aligned}[h]
+      & \tau\ (\mathit{value\ types})\ ::=
+      \ \alpha\ |\ \tau \ \texttt{ref}_f\ |\ \mu \alpha . \tau \\[-3pt]
+      & \sigma\ (\mathit{function\ types})\ ::=
+      \ (\tau _1, \dots, \tau _n) \rightarrow (\tau _{1}', \dots, \tau _{n}') \\
+    \end{aligned}
+    $}
+    \caption{型}
+    \label{type}
+  \end{figure}
+\end{definition}
+
+$\alpha$は型変数で，再帰型を作る構築子$\mu \alpha$によって束縛される．
+$\tau \ \texttt{ref}_f$はポインタにつく型で，参照した先の値の型が$\tau$で
+所有権が$f$である，ということを表している．所有権$f$は$0$以上$1$以下の有
+理数で，プログラマがそのポインタを通して行って良い操作，行わなければなら
+ない操作を表現している．所有権が$0$の時，プログラマはポインタを通してどの
+ような操作も行うことができない．所有権が$0$より大きく$1$未満の時，プログ
+ラマはポインタを通して読み込みを行うことができる．所有権が$1$の時，プログ
+ラマはポインタを通して，読み込み，書き込み，解放を行うことができる．また，
+所有権が$0$より大きい時は，プログラマはそのポインタの参照先を解放しなけれ
+ばならない．$(\tau _1, \dots, \tau _n) \rightarrow (\tau _{1}', \dots,
+\tau _{n}')$は，$n$引数関数につく型で，引数の型が$(\tau _1, \dots, \tau
+_n)$で，関数を実行すると，その型が$(\tau _{1}', \dots, \tau _{n}')$になる
+ということを表している．
+
+次に型の意味論について定義する．
+
+\begin{definition}[意味論]
+型の意味論を以下のように定義する．\\[-15pt]
+\begin{center}
+$
+  [\![\tau\ \texttt{ref}_{f}]\!](\epsilon)\,=\,f ~~~
+  [\![\tau\ \texttt{ref}_{f}]\!](0w)\,=\,[\![\tau]\!](w) ~~~
+  [\![\mu\alpha.\tau]\!]\,=\,[\![[\mu\alpha.\tau/\alpha]\tau]\!]
+$
+\end{center}
+\label{type_semantics}
+\end{definition}
+
+$[\![\cdot]\!]$ は，$0$の有限列の集合から，有理数への集合の写像で定義される．
+$[\![\tau\ \texttt{ref}_{f}]\!](\epsilon)$は，ポインタが直接参照している
+メモリ領域への所有権を表し，$[\![\tau\ \texttt{ref}_{f}]\!](0^k)$は，
+ポインタから$k$回参照した先のメモリ領域への所有権を表している．
+
+また，$[\![\tau]\!]$ = $[\![\tau']\!]$ が成り立つとき，
+$\tau \approx \tau'$と表記する．
+再帰型$\mu \alpha . \tau$ に関しては，
+$\mu \alpha . \tau \approx [\mu \alpha. \tau / \alpha] \tau$ が成り立つ．
+$[\mu \alpha. \tau / \alpha] \tau$ は，$\tau$ 中の $\alpha$ を $\mu \alpha. \tau$
+に置き換えたもので，例えば，$\mu \alpha. (\alpha\ \texttt{ref}_{0})$ と
+$(\mu \alpha. (\alpha\ \texttt{ref}_{0}))\ \texttt{ref}_{0} $ は
+同じ型を表している．
+更に，型$\tau$中に含まれる所有権が全て$0$の時，$\texttt{empty}(\tau)$と表記する．
+
+
+\subsection{型付け規則}
+上で定義した型をもとに型付け規則を定義する．\\型付け可能かどうかを判断す
+る型判断は$\Theta;\,\Gamma\,\vdash\,s\,\Rightarrow\,\Gamma'$ の形をしてい
+る．$\Theta$は，関数環境で，変数(関数名)から関数の型への写像である．
+$\Gamma$は，型環境で，変数からその変数についている型への写像である．関数
+環境$\Theta$，型環境$\Gamma$の元で，命令$s$を実行すると，実行後の型環境が
+$\Gamma'$になる，という意味である．
+\begin{definition}[型付け規則]
+型付け規則を図\ref{typing_rules}のように定義する．
+\end{definition}
+
+\begin{figure}[H]
+  \begin{minipage}{0.45\linewidth}
+    \infrule{\ }{\Theta;\,\Gamma\,\vdash\,\texttt{skip}\,\Rightarrow\,\Gamma}
+  \end{minipage}
+  \begin{minipage}{0.45\linewidth}
+    \infrule{\Theta;\,\Gamma\,\vdash\,s_{1}\,\Rightarrow\,\Gamma'' \andalso
+    \Theta;\,\Gamma''\,\vdash\,s_{2}\,\Rightarrow\,\Gamma'}
+    {\Theta;\,\Gamma\,\vdash\,s_{1};\,s_{2}\,\Rightarrow\,\Gamma'}
+  \end{minipage}
+    \infrule{\tau \,\approx\,\tau_{1}\,+\,\tau_{2}
+    \andalso \texttt{empty}(\tau ')
+    \andalso f = 1}
+    {\Theta;\,\Gamma,\,x\,:\,\tau'\ \texttt{ref}_{f},\,y\,:\,\tau \,\vdash\,
+    \mathit{*x}\,\leftarrow\,y
+    \,\Rightarrow\,\Gamma,\,x\,:\,\tau_{1}\ \texttt{ref}_{f},\,y\,:\,\tau_{2}}
+    \infrule{\texttt{empty}(\tau)
+    \andalso f_1 = 1
+    \andalso f_2 = 0}
+    {\Theta;\,\Gamma,\,x\,:\,\tau\ \texttt{ref}_{f_{1}}\,
+    \vdash\,\texttt{free}(x)\,
+    \Rightarrow\,\Gamma,\,x\,:\,\tau\ \texttt{ref}_{f_{2}}}
+    \infrule{
+    \Theta;\,\Gamma,\,x\,:\,\tau\ \texttt{ref}_{1}\,\vdash\,s\,\Rightarrow\,
+    \Gamma',\,x\,:\,\tau'\ \texttt{ref}_{0} \andalso
+    \texttt{empty}(\tau) \andalso \texttt{empty}(\tau')}
+    {\Theta;\,\Gamma\,\vdash\,\texttt{let}\ x\ =\ \texttt{malloc}()
+    \ \texttt{in}\ s\, \Rightarrow \, \Gamma'}
+    \infrule{\Theta;\,\Gamma,\,x\,:\,\tau_{1},\,y\,:\,\tau_{2}\,\vdash\,s\,
+    \Rightarrow\,\Gamma',\,x\,:\,\tau_{1}'
+    \andalso \tau\,\approx\,\tau_{1}\,+\,\tau_{2}
+    \andalso \texttt{empty}(\tau_{1}')}
+    {\Theta;\,\Gamma,\,y\,:\,\tau\,\vdash\,\texttt{let}\ x\ =\ y\ \texttt{in}
+    \ s\,\Rightarrow\,\Gamma'}
+    \infrule{\Theta;\,\Gamma,\,x\,:\,\tau_{1},\,y\,:\,\tau_{2}\ \texttt{ref}_f\,
+    \vdash\,s\,\Rightarrow\,\Gamma',\,x\,:\,\tau_{1}' \\
+    f\,>\,0 \andalso \tau\,\approx\,\tau_{1}\,+\,\tau_{2} \andalso
+    \texttt{empty}(\tau_{1}')}
+    {\Theta;\,\Gamma,\,y\,:\,\tau\ \texttt{ref}_{f}\,\vdash\,\texttt{let}\ x\ =
+    \ \mathit{*y}\ \texttt{in}\ s\,\Rightarrow\,\Gamma'}
+    \infrule{\Theta(f)\,=\,(\tilde{\tau})\,\to\,(\tilde{\tau}')}
+    {\Theta;\,\Gamma,\,\tilde{x}\,:\,\tilde{\tau}\,\vdash\,f(\tilde{x})\,
+    \Rightarrow\,\Gamma,\,\tilde{x}\,:\,\tilde{\tau}'}
+  \end{figure}
+\begin{figure}[htbp]
+    \infrule{\Theta;\,\Gamma,\,x\,:\,\tau\,\vdash\,s\,\Rightarrow\,\Gamma',
+    \,x\,:\,\tau'}
+    {\Theta;\,\Gamma\,\vdash\,\texttt{let}\ x\ =\ \texttt{null\ in}\ s\,
+    \Rightarrow\,\Gamma'}
+    \infrule{\Theta;\,\Gamma,\,x\,:\,\tau'\,\vdash\,s_{1}\,\Rightarrow\,\Gamma'
+    \andalso \Theta;\,\Gamma,\,x\,:\,\tau\,\vdash\,s_{2}\,\Rightarrow\,\Gamma'}
+    {\Theta;\,\Gamma,\,x\,:\,\tau\,\vdash\,\texttt{ifnull}(x)\ \texttt{then}
+    \ s_{1}\ \texttt{else}\ s_{2}\,\Rightarrow\,\Gamma'}
+    \infrule{\Theta;\,\tilde{x}\,:\,\tilde{\tau}\,\vdash\,s\,:\,\tilde{x}\,:
+    \,\tilde{\tau}' \andalso \Theta(f)\,=\,\tilde{\tau}\,\to\,\tilde{\tau}'\\
+    (\text{for each}\,f(\tilde{x})\,=\,s\,\in\,D)\ dom(\Theta)\,=\,dom(D)}
+    {\vdash\,D\,:\,\Theta}
+    \infrule{\vdash\,D\,:\,\Theta ~~~ \Theta;\,\emptyset\,\vdash\,s\,
+    \Rightarrow\,\emptyset}{\vdash\,(D,\,s)}
+    \infrule{\tau_1 + \tau_2 \approx \tau_1' + \tau_2'}
+    {\Theta;\,\Gamma,\,x_1:\tau_1,\,x_2:\tau_2\,\vdash
+    \,\texttt{assert}(x_1, x_2)\,\Rightarrow\,\Gamma,\,x_1:\tau_1',\,x_2:\tau_2'}
+    \infrule{\Gamma\,\approx\,\Gamma_{1} \andalso \Gamma'\,\approx\,\Gamma_{1}'
+    \andalso \Theta;\,\Gamma_{1}\,\vdash\,s\,\Rightarrow\,\Gamma_{1}'}
+    {\Theta;\,\Gamma\,\vdash\,s\,\Rightarrow\,\Gamma'}
+  \caption{型付け規則}
+  \label{typing_rules}
+\end{figure}
+
+例えば，
+{\small
+  \infrule{\tau \,\approx\,\tau_{1}\,+\,\tau_{2}
+  \andalso \texttt{empty}(\tau ')
+  \andalso f = 1}
+  {\Theta;\,\Gamma,\,x\,:\,\tau'\ \texttt{ref}_{f},\,y\,:\,\tau \,\vdash\,
+  \mathit{*x}\,\leftarrow\,y
+  \,\Rightarrow\,\Gamma,\,x\,:\,\tau_{1}\ \texttt{ref}_{f},\,y\,:\,\tau_{2}}
+}
+は，$\mathit{*x}\,\leftarrow\,y$に対する型付け規則になっている．
+$\tau \,\approx\,\tau_{1}\,+\,\tau_{2}$ は，$\tau$ が実行前の$y$の型，$\tau_{1}$
+と$\tau_{2}$がそれぞれ実行後の$*x$と$y$の型なので，実行前の$y$の所有権を
+実行後の$*x$と$y$に分配する，ということを表している．$f$は実行前の$x$についている
+所有権で，この値が$1$になっている．これにより，ポインタを通して書き込みを行うには
+所有権が$1$でないといけない，ということを表している．
+
+同じように$\texttt{free}(x)$の規則を見ると，実行前の$x$の所有権が$1$で，
+実行後の所有権が$0$になっている．これはポインタを通してメモリ領域を解放す
+るには所有権が$1$必要であるということと，解放後には$0$になっているため，
+もうそのポインタを通して書き込みや解放は行うことができなくなっているとい
+うことを表している．
+
+ポインタに対する所有権は$\texttt{let}\ x\ =\ \texttt{malloc}()\ \texttt{in}\ s$
+で与えられる．$x$に所有権$1$が与えられた環境の元で$s$を実行し，$s$の実行が終わる，
+つまり$x$のスコープを抜ける時点で，$x$の所有権は$0$になっていなければならない．
+これで，メモリリークが起きていないということを表している．
+
+\subsection{健全性}
+また，型システムの健全性が証明されている．
+
+\begin{theorem}[型の健全性 \cite{DBLP:conf/aplas/SuenagaK09}]
+  $\vdash\,(D,s)$なら，以下の2条件を満たす．
+    \begin{enumerate}
+      \item $\langle \emptyset,\,\emptyset,\,s \rangle
+            \not\longrightarrow^{*}_{D} \texttt{Error}$
+      \item $\mathit{If}\ \langle \emptyset,\,\emptyset,\,s \rangle
+            \longrightarrow^{*}_{D} \langle H,\,R,\,\texttt{skip} \rangle,
+            \ then\ H\,=\,\emptyset$
+    \end{enumerate}
+\end{theorem}
+
+$\vdash\,(D,s)$は，プログラムに型がつくということを表している．$1$の条件
+は，プログラムに型がつくなら，実行状態が\texttt{Error}になることはない，
+ということを意味している．\texttt{Error}は，図\ref{semantics}で定義したように，
+一度解放したメモリ領域にアクセスすると発生するエラーである．この条件によ
+り，プログラムに型がつけば，不正なメモリ領域へのアクセスが起きないという
+ことが保証されている．$2$の条件は，プログラムに型がつき，かつプログラムが
+停止したなら，停止後の$H$は空集合になっているということを意味している．
+$H$はヒープ領域をモデル化したものなので，ヒープ領域が空になっているという
+ことは，全てのメモリ領域が解放されているということである．この条件により，
+プログラムに型がつき，かつプログラムが停止するなら，メモリリークが起きな
+いということが保証されている．
+
+
+\subsection{型推論アルゴリズム}
+最後に各変数や各関数につく型を自動で推論するためのアルゴリズムについて説
+明する．定理1より，型推論によりプログラムに型が付けばメモリに関するエラー
+が発生しない，ということが保証されている．実装の簡単化のために，型推論で
+の型の構文を$(\mu\alpha.\alpha\ \texttt{ref}_{f_{1}})\
+\texttt{ref}_{f_{2}}$に制限している．型推論は以下のように進んでいく．
+
+\begin{enumerate}
+  \item $n$引数の関数$f$の型を
+        \begin{align*}
+          & ((\mu\alpha.\alpha\ \texttt{ref}_{\eta_{f,\,1,\,1}})
+          \ \texttt{ref}_{\eta_{f,\,1,\,2}},\,\dots\,
+          (\mu\alpha.\alpha\ \texttt{ref}_{\eta_{f,\,n,\,1}})
+          \ \texttt{ref}_{\eta_{f,\,n,\,2}}) \\[-3pt]
+              & \longrightarrow ((\mu\alpha.\alpha
+          \ \texttt{ref}_{\eta'_{f,\,1,\,1}})
+          \ \texttt{ref}_{\eta'_{f,\,1,\,2}},\,\dots\,
+              (\mu\alpha.\alpha\ \texttt{ref}_{\eta'_{f,\,n,\,1}})
+          \ \texttt{ref}_{\eta'_{f,\,n,\,2}})
+        \end{align*}
+        とする．$\eta_{f,\,i,\,j}$と$\eta'_{f,\,i,\,j}$は
+        値の分からない所有権である．\\
+        同様に，プログラム地点$p$での変数$x$の型を
+        \[
+        ((\mu\alpha.\alpha\ \texttt{ref}_{\eta_{p,\,x,\,1}})
+        \ \texttt{ref}_{\eta_{p,\,x\,,2}})
+        \]
+        とする．
+  \item 型付け規則(図\ref{typing_rules})に従い所有権についての線形不等式を生成する．
+  \item 線形不等式を解く．不等式に解があれば，そのプログラムには型が付く．
+\end{enumerate}
+
+
+\begin{example}[型推論]
+  図\ref{typing_example}のプログラムを例に挙げる．コメントには，各プロ
+  グラム地点の型環境と，型環境と型付け規則から生成された所有権に関する制
+  約式が書かれている．型は\verb|(t ref_f1) ref_f0|の形をしており，
+  \texttt{f0}がポインタに直接についている所有権，\texttt{f1}がポインタを
+  一回参照した先のポインタについている所有権を表している．
+
+  \verb|let a = malloc()|により，ポインタ\verb|a|に所有権$1$が与えられる．
+  \verb|let b = a| により，\verb|a|と\verb|b|は同じメモリ領域を参照するの
+  で，\verb|a|が持っていた所有権$1$が\verb|a|と\verb|b|で分配される．
+  \verb|let c = *a|により，\verb|*a|と\verb|c|は同じメモリ領域を参照する
+  ので，\verb|*a|が持っていた所有権が\verb|*a|と\verb|c|で分配される．ま
+  た，ポインタ\verb|a|を参照しているので，\verb|a|には$0$より大きい所有権
+  が必要となる．\verb|let d = *b|も同様である．そして最後に
+  \verb|free(a)|を実行するのだが，この段階では\verb|a|が持っていた所有権
+  は\verb|a|と\verb|b|のに分配されているため，\verb|a|は所有権$1$を持って
+  おらず，\verb|free|を実行することができない．そのため，\verb|free|の前
+  に，\verb|assert(a = b)|を実行する．\verb|assert|は，同じメモリ領域を参
+  照しているポインタ間同士で所有権の受け渡しをするための命令で，\verb|a|
+  と\verb|b|は同じメモリ領域を参照しているので，分配していた所有権を
+  \verb|assert|により\verb|a|に戻すことができる．これにより，
+  \verb|free(a)|が実行でき，全ての所有権が$0$になる．
+
+  各命令から所有権に関する制約式が生成されるので，それらをまとめてSMTソル
+  バで解く．このプログラムの場合，制約式に解が存在するので，プログラムに
+  型がつき，メモリ操作に関する誤りが起きていないことがわかる．
+\end{example}
+
+\begin{figure}[htbp]
+  \small
+\begin{verbatim}
+  let a = malloc() in
+    /*
+    type_env = [a:(t ref_f1) ref_f0]
+    constr = [f0 = 1; f1 = 0]
+    */
+  let b = a in
+    /*
+    type_env = [a:(t ref_f3) ref_f2; b:(t ref_f5) ref_f4]
+    constr = [f0 = f2 + f4; f1 = f3 + f5]
+    */
+  let c = *a in
+    /*
+    type_env = [a:(t ref_f7) ref_f6; b:(t ref_f5) ref_f4
+                c:(t ref_f9) ref_f8]
+    constr = [f2 > 0; f3 = f7 + f8]
+    */
+  let d = *b in
+    /*
+    type_env = [a:(t ref_f7) ref_f6; b:(t ref_f11) ref_f10
+                c:(t ref_f9) ref_f8; d:(t ref_f13) ref_f12]
+    constr = [f4 > 0; f5 = f11 + f12]
+    */
+  assert(a = b);
+    /*
+    type_env = [a:(t ref_f15) ref_f14; b:(t ref_f17) ref_f16
+                c:(t ref_f9) ref_f8; d:(t ref_f13) ref_f12]
+    constr = [f6 + f10 = f14 + f16; f7 + f11 = f15 + f17]
+    */
+  free(a)
+    /*
+    type_env = [a:(t ref_f19) ref_f18; b:(t ref_f17) ref_f16
+                c:(t ref_f9) ref_f8; d:(t ref_f13) ref_f12]
+    constr = [f14 = 1; f18 = 0; f19 = 0]
+    */
+\end{verbatim}
+  \caption{プログラム例}
+  \label{typing_example}
+\end{figure}

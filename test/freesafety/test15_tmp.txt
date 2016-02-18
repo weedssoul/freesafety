@@ -1,0 +1,71 @@
+
+Empty[struct list 12]
+
+Empty[struct list 15]
+Teq[struct list 15; = struct list 20;]
+Teq[struct list 52; = struct list 20;]
+Teq[struct list 52; = struct list 55;]
+
+Empty[struct list 23]
+Teq[struct list 50; = struct list 23;]
+
+Empty[struct list 25]
+Empty[struct list 11]
+Teq[struct list 10; = struct list 17;]
+Teq[struct list 10; = struct list 25;]
+Teq[struct list 11; = struct list 25;]
+
+Empty[struct list 26]
+
+Empty[struct list 27]
+
+Empty[struct list 28]
+
+Empty[struct list 29]
+Empty[struct list 32]
+Empty[struct list 33]
+Teq[struct list 29; = struct list 33;struct list 32;  ]
+
+
+
+Empty[struct list 30]
+Empty[struct list 34]
+Teq[struct list 30; = struct list 35;struct list 34;  ]
+Teq[struct list 35; = struct list 40;struct list 39;  ]
+Teq[struct list 16; = struct list 40;]
+Teq[struct list 16; = struct list 15;struct list 13;  ]
+Teq[struct list 16; = struct list 45;]
+Teq[struct list 16; = struct list 48;]
+
+
+Empty[struct list 31]
+Empty[struct list 36]
+Teq[struct list 31; = struct list 37;struct list 36;  ]
+Empty[struct list 42]
+Empty[struct list 43]
+Teq[struct list 37; = struct list 43;struct list 42;  ]
+
+
+Empty[struct list 39]
+
+
+Empty[struct list 47]
+Empty[struct list 56]
+Teq[struct list 51; = struct list 47;]
+Teq[struct list 53; = struct list 47;]
+Teq[struct list 53; = struct list 56;]
+
+
+
+
+
+
+Teq[struct list 24; = struct list 23;struct list 22;  ]
+Teq[struct list 46; = struct list 47;struct list 24;  ]
+Teq[struct list 46; = struct list 49;]
+Teq[struct list 46; = struct list 54;]
+
+
+
+
+

@@ -1,0 +1,32 @@
+Text
+  C Program
+Down
+Box
+  CompCert\\
+  FrontEnd
+Right 2
+Box
+  Generate
+Right 2
+Box
+  Reduce
+Down 2
+Choice  . SAT . UNSAT 4 4
+  Solver
+Tag
+Down 2
+Box
+ Type-error\\
+ Slicer
+Down
+Text
+ Slice
+ToTag
+Left 2
+Box
+  CompCert\\
+  BackEnd
+Down
+Text
+  Output
+

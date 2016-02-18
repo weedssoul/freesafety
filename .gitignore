@@ -1,0 +1,11 @@
+.DS_Store
+_log
+_digest
+_build
+a.out
+*.o
+*.byte
+Configuration.ml
+ccomp
+*.light.*
+*/.DS_Store
